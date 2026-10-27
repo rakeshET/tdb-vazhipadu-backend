@@ -6,7 +6,7 @@ Pushpanjali or Archana for a date. The server prices every order.
 ## Stack
 
 - Java 17, Spring Boot 3.3 (Web, Data JPA, Validation)
-- H2 in-memory database
+- H2 in-memory database, schema managed by Flyway (`src/main/resources/db/migration`)
 - JUnit 5, Mockito, AssertJ, MockMvc
 
 ## Run
@@ -48,6 +48,7 @@ com.tdb.vazhipadu
 | GET | `/api/temples/{templeId}/offerings/{offeringId}` | Get an offering |
 | PUT | `/api/temples/{templeId}/offerings/{offeringId}` | Update an offering, including activating or deactivating it |
 | POST | `/api/temples/{templeId}/orders` | Place an order; the server computes the total |
+| GET | `/api/temples/{templeId}/orders` | Search orders by `date`, `status`, `phone`; paged with `page` (0-based) and `size` (1–100, default 20) |
 | GET | `/api/temples/{templeId}/orders/{orderId}` | Get an order by id |
 
 ### Example
@@ -69,7 +70,19 @@ curl -X POST localhost:8080/api/temples/1/orders -H 'Content-Type: application/j
   "items": [{"offeringId": 1, "quantity": 2}, {"offeringId": 2, "quantity": 1}]
 }'
 # -> 201 Created, "totalAmount": 110.00
+
+curl 'localhost:8080/api/temples/1/orders?phone=9876543210&status=CONFIRMED&page=0&size=20'
+# -> {"content": [...], "page": 0, "size": 20, "totalElements": 1, "totalPages": 1, "hasNext": false}
 ```
+
+### Order search
+
+- Results are always sorted by order id ascending. Ids only grow, so new orders land at the end and
+  earlier pages never shift; page *n+1* continues exactly where page *n* stopped.
+- Every filter is optional and filters combine with AND. `phone` is an exact 10-digit match.
+- Indexes `(temple_id, offering_date, id)`, `(temple_id, status, id)` and `(temple_id, phone, id)` serve
+  the common searches and their sort without scanning the table. `OrderRepositorySearchTest` asserts this
+  with `EXPLAIN`.
 
 ### Error format
 
