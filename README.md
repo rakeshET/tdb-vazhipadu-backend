@@ -50,6 +50,8 @@ com.tdb.vazhipadu
 | POST | `/api/temples/{templeId}/orders` | Place an order; the server computes the total |
 | GET | `/api/temples/{templeId}/orders` | Search orders by `date`, `status`, `phone`; paged with `page` (0-based) and `size` (1–100, default 20) |
 | GET | `/api/temples/{templeId}/orders/{orderId}` | Get an order by id |
+| POST | `/api/temples/{templeId}/orders/{orderId}/cancel` | Cancel an order (frees its daily-limit slots) |
+| GET | `/api/temples/{templeId}/reports/daily-collection?date=YYYY-MM-DD` | Daily collection: total amount and count/amount per offering |
 
 ### Example
 
@@ -96,6 +98,29 @@ curl 'localhost:8080/api/temples/1/orders?phone=9876543210&status=CONFIRMED&page
 - If the lock can't be acquired within 10 s (the `jakarta.persistence.lock.timeout` hint, plus H2's
   `LOCK_TIMEOUT`), the API returns `503 TRY_AGAIN` with `Retry-After: 1`.
 
+### Cancellation
+
+- `POST …/orders/{id}/cancel` sets the status to `CANCELLED` and records `cancelledAt`. Cancelled orders no
+  longer count towards daily limits, so their slots are bookable again.
+- Cancelling twice returns `409 ORDER_ALREADY_CANCELLED`. Orders whose offering date has passed (in IST)
+  can't be cancelled (`422 ORDER_NOT_CANCELLABLE`), so a closed day's collection never changes afterwards.
+
+### Daily collection report
+
+```bash
+curl 'localhost:8080/api/temples/1/reports/daily-collection?date=2026-11-01'
+# -> {"templeId":1,"date":"2026-11-01","timeZone":"Asia/Kolkata","totalAmount":5100.49,
+#     "offerings":[{"offeringId":2,"offeringName":"Archana","count":3,"amount":99.99}, ...]}
+```
+
+- The day is the IST calendar day on which an order was **placed** (`[00:00, 24:00)` in `Asia/Kolkata`), so an
+  order placed at 00:15 IST counts on that date.
+- Only `CONFIRMED` orders are included. `count` is the number of rituals (summed quantity) and `amount` is the
+  exact sum of line totals.
+- Money is `DECIMAL` in the database and `BigDecimal` in Java. It is aggregated in SQL per offering, and
+  `totalAmount` is the sum of the offering amounts, so the two always match to the paisa.
+- Index `(temple_id, created_at)` serves the date window.
+
 ### Error format
 
 Every error uses the same JSON shape:
@@ -115,8 +140,8 @@ Every error uses the same JSON shape:
 |--------|-------|
 | 400 | `VALIDATION_FAILED`, `MALFORMED_REQUEST` |
 | 404 | `NOT_FOUND` |
-| 409 | `DUPLICATE_OFFERING`, `DAILY_LIMIT_EXCEEDED`, `DATA_CONFLICT` |
-| 422 | `OFFERING_INACTIVE`, `UNKNOWN_OFFERING` |
+| 409 | `DUPLICATE_OFFERING`, `DAILY_LIMIT_EXCEEDED`, `ORDER_ALREADY_CANCELLED`, `DATA_CONFLICT` |
+| 422 | `OFFERING_INACTIVE`, `UNKNOWN_OFFERING`, `ORDER_NOT_CANCELLABLE` |
 | 503 | `TRY_AGAIN` |
 
 ## Pull requests
