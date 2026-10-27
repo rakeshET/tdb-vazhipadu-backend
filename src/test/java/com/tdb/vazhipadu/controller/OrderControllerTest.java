@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -174,6 +176,20 @@ class OrderControllerTest {
         mockMvc.perform(get("/api/temples/1/orders/1"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DUPLICATE_OFFERING"));
+    }
+
+    @Test
+    void shouldReturn503WithRetryAfterWhenBookingLockTimesOut() throws Exception {
+        when(orderService.placeOrder(eq(1L), any())).thenThrow(new CannotAcquireLockException("lock timeout"));
+        var body = """
+                {"devoteeName": "Ravi", "phone": "9876543210", "nakshatra": "ROHINI",
+                 "offeringDate": "2026-11-01", "items": [{"offeringId": 1, "quantity": 1}]}
+                """;
+
+        mockMvc.perform(post("/api/temples/1/orders").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("Retry-After", "1"))
+                .andExpect(jsonPath("$.code").value("TRY_AGAIN"));
     }
 
     @Test
