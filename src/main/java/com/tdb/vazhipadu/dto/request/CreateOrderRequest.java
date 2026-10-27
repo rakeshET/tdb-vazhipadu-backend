@@ -12,9 +12,7 @@ import java.util.List;
 
 public record CreateOrderRequest(
         @NotBlank @Size(max = 100) String devoteeName,
-        @NotBlank @Pattern(regexp = "[6-9]\\d{9}", message = "must be a 10-digit Indian mobile number")
-        String phone,
+        @NotBlank @Pattern(regexp = "[6-9]\\d{9}", message = "must be a 10-digit Indian mobile number") String phone,
         @NotNull Nakshatra nakshatra,
         @NotNull LocalDate offeringDate,
-        @NotEmpty @Size(max = 20) List<@NotNull @Valid OrderItemRequest> items) {
-}
+        @NotEmpty @Size(max = 20) List<@NotNull @Valid OrderItemRequest> items) {}

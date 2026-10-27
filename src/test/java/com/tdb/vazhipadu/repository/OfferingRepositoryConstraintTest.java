@@ -15,6 +15,7 @@ class OfferingRepositoryConstraintTest {
 
     @Autowired
     private OfferingRepository offeringRepository;
+
     @Autowired
     private TempleRepository templeRepository;
 
@@ -23,8 +24,8 @@ class OfferingRepositoryConstraintTest {
         var temple = templeRepository.save(new Temple("Sabarimala"));
         offeringRepository.saveAndFlush(new Offering(temple, "Archana", new BigDecimal("50.00"), true));
 
-        assertThatThrownBy(() -> offeringRepository.saveAndFlush(
-                new Offering(temple, "archana", new BigDecimal("40.00"), true)))
+        assertThatThrownBy(() ->
+                        offeringRepository.saveAndFlush(new Offering(temple, "archana", new BigDecimal("40.00"), true)))
                 .isInstanceOf(DataIntegrityViolationException.class)
                 .hasMessageContaining("UQ_OFFERING_TEMPLE_NAME");
     }

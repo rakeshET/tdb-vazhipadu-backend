@@ -8,8 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 public final class OrderSpecifications {
 
-    private OrderSpecifications() {
-    }
+    private OrderSpecifications() {}
 
     public static Specification<OfferingOrder> matching(Long templeId, OrderSearchCriteria criteria) {
         return (root, query, cb) -> {

@@ -17,8 +17,8 @@ import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.ErrorResponse;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -61,7 +61,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        if (ex.getCause() instanceof MismatchedInputException mismatch && !mismatch.getPath().isEmpty()) {
+        if (ex.getCause() instanceof MismatchedInputException mismatch
+                && !mismatch.getPath().isEmpty()) {
             var violation = new FieldViolation(fieldPath(mismatch), "has an invalid value");
             return build(ErrorCode.MALFORMED_REQUEST, "Request body is malformed", request, List.of(violation));
         }
@@ -70,15 +71,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
-        return build(ErrorCode.MALFORMED_REQUEST, "Invalid value for parameter '%s'".formatted(ex.getName()),
-                request, List.of());
+        return build(
+                ErrorCode.MALFORMED_REQUEST,
+                "Invalid value for parameter '%s'".formatted(ex.getName()),
+                request,
+                List.of());
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex,
-                                                HttpServletRequest request) {
-        return build(ErrorCode.MALFORMED_REQUEST, "Missing parameter '%s'".formatted(ex.getParameterName()),
-                request, List.of());
+    ResponseEntity<ApiError> handleMissingParam(
+            MissingServletRequestParameterException ex, HttpServletRequest request) {
+        return build(
+                ErrorCode.MALFORMED_REQUEST,
+                "Missing parameter '%s'".formatted(ex.getParameterName()),
+                request,
+                List.of());
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
@@ -113,8 +120,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PessimisticLockingFailureException.class)
     ResponseEntity<ApiError> handleLockTimeout(PessimisticLockingFailureException ex, HttpServletRequest request) {
         log.warn("Lock not acquired on {} {}", request.getMethod(), request.getRequestURI());
-        var response = build(ErrorCode.TRY_AGAIN, "Too many simultaneous bookings, please retry", request,
-                List.of());
+        var response = build(ErrorCode.TRY_AGAIN, "Too many simultaneous bookings, please retry", request, List.of());
         return ResponseEntity.status(response.getStatusCode())
                 .header(HttpHeaders.RETRY_AFTER, "1")
                 .body(response.getBody());
@@ -124,8 +130,13 @@ public class GlobalExceptionHandler {
     ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
         if (ex instanceof ErrorResponse errorResponse) {
             var status = errorResponse.getStatusCode();
-            var body = new ApiError(Instant.now(), status.value(), "REQUEST_REJECTED",
-                    errorResponse.getBody().getDetail(), request.getRequestURI(), List.of());
+            var body = new ApiError(
+                    Instant.now(),
+                    status.value(),
+                    "REQUEST_REJECTED",
+                    errorResponse.getBody().getDetail(),
+                    request.getRequestURI(),
+                    List.of());
             return ResponseEntity.status(status).body(body);
         }
         log.error("Unhandled error on {} {}", request.getMethod(), request.getRequestURI(), ex);
@@ -144,10 +155,10 @@ public class GlobalExceptionHandler {
                 .replace(".[", "[");
     }
 
-    private static ResponseEntity<ApiError> build(ErrorCode code, String message, HttpServletRequest request,
-                                                  List<FieldViolation> violations) {
-        var body = new ApiError(Instant.now(), code.status().value(), code.name(), message,
-                request.getRequestURI(), violations);
+    private static ResponseEntity<ApiError> build(
+            ErrorCode code, String message, HttpServletRequest request, List<FieldViolation> violations) {
+        var body = new ApiError(
+                Instant.now(), code.status().value(), code.name(), message, request.getRequestURI(), violations);
         return ResponseEntity.status(code.status()).body(body);
     }
 }

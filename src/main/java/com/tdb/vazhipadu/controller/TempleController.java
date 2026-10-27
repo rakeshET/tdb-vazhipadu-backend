@@ -26,7 +26,8 @@ public class TempleController {
     @PostMapping
     public ResponseEntity<TempleResponse> createTemple(@Valid @RequestBody CreateTempleRequest request) {
         var created = templeService.createTemple(request);
-        return ResponseEntity.created(URI.create("/api/temples/" + created.id())).body(created);
+        return ResponseEntity.created(URI.create("/api/temples/" + created.id()))
+                .body(created);
     }
 
     @GetMapping("/{templeId}")

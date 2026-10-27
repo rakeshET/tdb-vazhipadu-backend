@@ -47,10 +47,13 @@ class OrderServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
     @Mock
     private OfferingRepository offeringRepository;
+
     @Mock
     private TempleService templeService;
+
     @Mock
     private DailyLimitService dailyLimitService;
 
@@ -71,8 +74,8 @@ class OrderServiceTest {
         when(offeringRepository.findAllById(anyIterable())).thenReturn(List.of(pushpanjali, archana));
         when(orderRepository.save(any(OfferingOrder.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var response = orderService.placeOrder(TEMPLE_ID,
-                request(TODAY, new OrderItemRequest(10L, 2), new OrderItemRequest(11L, 1)));
+        var response = orderService.placeOrder(
+                TEMPLE_ID, request(TODAY, new OrderItemRequest(10L, 2), new OrderItemRequest(11L, 1)));
 
         assertThat(response.totalAmount()).isEqualByComparingTo("110.00");
         assertThat(response.status()).isEqualTo(OrderStatus.CONFIRMED);
@@ -80,8 +83,7 @@ class OrderServiceTest {
         assertThat(response.items())
                 .extracting(OrderItemResponse::offeringName, OrderItemResponse::lineTotal)
                 .containsExactly(
-                        tuple("Pushpanjali", new BigDecimal("60.00")),
-                        tuple("Archana", new BigDecimal("50.00")));
+                        tuple("Pushpanjali", new BigDecimal("60.00")), tuple("Archana", new BigDecimal("50.00")));
     }
 
     @Test
@@ -91,8 +93,8 @@ class OrderServiceTest {
         when(offeringRepository.findAllById(anyIterable())).thenReturn(List.of(archana));
 
         assertThatThrownBy(() -> orderService.placeOrder(TEMPLE_ID, request(TODAY, new OrderItemRequest(11L, 1))))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.OFFERING_INACTIVE));
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.OFFERING_INACTIVE));
         verify(orderRepository, never()).save(any());
     }
 
@@ -104,8 +106,8 @@ class OrderServiceTest {
         when(offeringRepository.findAllById(anyIterable())).thenReturn(List.of(foreign));
 
         assertThatThrownBy(() -> orderService.placeOrder(TEMPLE_ID, request(TODAY, new OrderItemRequest(20L, 1))))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.UNKNOWN_OFFERING));
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.UNKNOWN_OFFERING));
     }
 
     @Test
@@ -114,28 +116,28 @@ class OrderServiceTest {
         when(offeringRepository.findAllById(anyIterable())).thenReturn(List.of());
 
         assertThatThrownBy(() -> orderService.placeOrder(TEMPLE_ID, request(TODAY, new OrderItemRequest(99L, 1))))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.UNKNOWN_OFFERING));
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.UNKNOWN_OFFERING));
     }
 
     @Test
     void shouldRejectSameOfferingListedTwice() {
         when(templeService.findTempleOrThrow(TEMPLE_ID)).thenReturn(temple);
 
-        assertThatThrownBy(() -> orderService.placeOrder(TEMPLE_ID,
-                request(TODAY, new OrderItemRequest(10L, 1), new OrderItemRequest(10L, 2))))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+        assertThatThrownBy(() -> orderService.placeOrder(
+                        TEMPLE_ID, request(TODAY, new OrderItemRequest(10L, 1), new OrderItemRequest(10L, 2))))
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_FAILED));
     }
 
     @Test
     void shouldRejectOfferingDateInThePastInIst() {
         when(templeService.findTempleOrThrow(TEMPLE_ID)).thenReturn(temple);
 
-        assertThatThrownBy(() -> orderService.placeOrder(TEMPLE_ID,
-                request(TODAY.minusDays(1), new OrderItemRequest(10L, 1))))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+        assertThatThrownBy(() ->
+                        orderService.placeOrder(TEMPLE_ID, request(TODAY.minusDays(1), new OrderItemRequest(10L, 1))))
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_FAILED));
     }
 
     @Test
@@ -143,8 +145,8 @@ class OrderServiceTest {
         when(orderRepository.findWithItemsByIdAndTempleId(5L, TEMPLE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getOrder(TEMPLE_ID, 5L))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
     }
 
     @Test
@@ -163,8 +165,8 @@ class OrderServiceTest {
         orderPlacedAt(CLOCK.instant()).cancel(CLOCK.instant());
 
         assertThatThrownBy(() -> orderService.cancelOrder(TEMPLE_ID, 5L))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.ORDER_ALREADY_CANCELLED));
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.ORDER_ALREADY_CANCELLED));
     }
 
     @Test
@@ -172,8 +174,8 @@ class OrderServiceTest {
         var order = orderPlacedAt(Instant.parse("2026-10-26T18:29:59Z"));
 
         assertThatThrownBy(() -> orderService.cancelOrder(TEMPLE_ID, 5L))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.ORDER_NOT_CANCELLABLE));
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.ORDER_NOT_CANCELLABLE));
         assertThat(order.isCancelled()).isFalse();
     }
 
@@ -182,8 +184,8 @@ class OrderServiceTest {
         when(orderRepository.findForUpdateByIdAndTempleId(5L, TEMPLE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.cancelOrder(TEMPLE_ID, 5L))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
     }
 
     @Test
@@ -191,8 +193,8 @@ class OrderServiceTest {
         when(templeService.findTempleOrThrow(99L)).thenThrow(ApiException.notFound("Temple", 99L));
 
         assertThatThrownBy(() -> orderService.searchOrders(99L, new OrderSearchCriteria(null, null, null), 0, 20))
-                .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
+                .isInstanceOfSatisfying(
+                        ApiException.class, ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
         verifyNoInteractions(orderRepository);
     }
 

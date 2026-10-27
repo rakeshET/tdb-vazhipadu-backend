@@ -6,8 +6,8 @@ import com.tdb.vazhipadu.dto.request.OrderSearchCriteria;
 import com.tdb.vazhipadu.dto.response.OrderResponse;
 import com.tdb.vazhipadu.dto.response.OrderSummaryResponse;
 import com.tdb.vazhipadu.dto.response.PageResponse;
-import com.tdb.vazhipadu.entity.OfferingOrder;
 import com.tdb.vazhipadu.entity.Offering;
+import com.tdb.vazhipadu.entity.OfferingOrder;
 import com.tdb.vazhipadu.exception.ApiException;
 import com.tdb.vazhipadu.exception.ErrorCode;
 import com.tdb.vazhipadu.mapper.OrderMapper;
@@ -40,8 +40,12 @@ public class OrderService {
     private final DailyLimitService dailyLimitService;
     private final Clock clock;
 
-    public OrderService(OrderRepository orderRepository, OfferingRepository offeringRepository,
-                        TempleService templeService, DailyLimitService dailyLimitService, Clock clock) {
+    public OrderService(
+            OrderRepository orderRepository,
+            OfferingRepository offeringRepository,
+            TempleService templeService,
+            DailyLimitService dailyLimitService,
+            Clock clock) {
         this.orderRepository = orderRepository;
         this.offeringRepository = offeringRepository;
         this.templeService = templeService;
@@ -56,8 +60,13 @@ public class OrderService {
         var offerings = findBookableOfferings(templeId, request.items());
         dailyLimitService.ensureCapacity(request.offeringDate(), request.items(), offerings);
 
-        var order = new OfferingOrder(temple, request.devoteeName().strip(), request.phone(), request.nakshatra(),
-                request.offeringDate(), Instant.now(clock));
+        var order = new OfferingOrder(
+                temple,
+                request.devoteeName().strip(),
+                request.phone(),
+                request.nakshatra(),
+                request.offeringDate(),
+                Instant.now(clock));
         request.items().forEach(item -> order.addItem(offerings.get(item.offeringId()), item.quantity()));
 
         var saved = orderRepository.save(order);
@@ -72,14 +81,16 @@ public class OrderService {
 
     @Transactional
     public OrderResponse cancelOrder(Long templeId, Long orderId) {
-        var order = orderRepository.findForUpdateByIdAndTempleId(orderId, templeId)
+        var order = orderRepository
+                .findForUpdateByIdAndTempleId(orderId, templeId)
                 .orElseThrow(() -> ApiException.notFound("Order", orderId));
         if (order.isCancelled()) {
-            throw new ApiException(ErrorCode.ORDER_ALREADY_CANCELLED,
-                    "Order %d is already cancelled".formatted(orderId));
+            throw new ApiException(
+                    ErrorCode.ORDER_ALREADY_CANCELLED, "Order %d is already cancelled".formatted(orderId));
         }
         if (!LocalDate.ofInstant(order.getCreatedAt(), clock.getZone()).equals(LocalDate.now(clock))) {
-            throw new ApiException(ErrorCode.ORDER_NOT_CANCELLABLE,
+            throw new ApiException(
+                    ErrorCode.ORDER_NOT_CANCELLABLE,
                     "Order %d was placed on an earlier day; only same-day orders can be cancelled".formatted(orderId));
         }
         order.cancel(Instant.now(clock));
@@ -88,8 +99,8 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<OrderSummaryResponse> searchOrders(Long templeId, OrderSearchCriteria criteria,
-                                                           int page, int size) {
+    public PageResponse<OrderSummaryResponse> searchOrders(
+            Long templeId, OrderSearchCriteria criteria, int page, int size) {
         templeService.findTempleOrThrow(templeId);
         var pageable = PageRequest.of(page, size, Sort.by("id"));
         var orders = orderRepository.findAll(OrderSpecifications.matching(templeId, criteria), pageable);
@@ -97,7 +108,8 @@ public class OrderService {
     }
 
     private OfferingOrder findOrderOrThrow(Long templeId, Long orderId) {
-        return orderRepository.findWithItemsByIdAndTempleId(orderId, templeId)
+        return orderRepository
+                .findWithItemsByIdAndTempleId(orderId, templeId)
                 .orElseThrow(() -> ApiException.notFound("Order", orderId));
     }
 
@@ -120,12 +132,12 @@ public class OrderService {
 
     private static void requireBookable(Offering offering, Long offeringId, Long templeId) {
         if (offering == null || !offering.belongsTo(templeId)) {
-            throw new ApiException(ErrorCode.UNKNOWN_OFFERING,
-                    "Offering %d is not available at this temple".formatted(offeringId));
+            throw new ApiException(
+                    ErrorCode.UNKNOWN_OFFERING, "Offering %d is not available at this temple".formatted(offeringId));
         }
         if (!offering.isActive()) {
-            throw new ApiException(ErrorCode.OFFERING_INACTIVE,
-                    "Offering '%s' is not currently active".formatted(offering.getName()));
+            throw new ApiException(
+                    ErrorCode.OFFERING_INACTIVE, "Offering '%s' is not currently active".formatted(offering.getName()));
         }
     }
 }

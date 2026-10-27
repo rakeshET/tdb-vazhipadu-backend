@@ -22,8 +22,7 @@ public class ReportController {
 
     @GetMapping("/daily-collection")
     public DailyCollectionReport dailyCollection(
-            @PathVariable Long templeId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @PathVariable Long templeId, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return reportService.dailyCollection(templeId, date);
     }
 }

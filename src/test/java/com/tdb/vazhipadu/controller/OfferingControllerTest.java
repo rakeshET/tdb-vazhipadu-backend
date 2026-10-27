@@ -32,7 +32,8 @@ class OfferingControllerTest {
     @ParameterizedTest
     @ValueSource(ints = {0, -1, 100_001})
     void shouldReturn400WhenDailyLimitOutOfRange(int dailyLimit) throws Exception {
-        mockMvc.perform(post("/api/temples/1/offerings").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/temples/1/offerings")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\": \"Udayasthamana Pooja\", \"price\": 5000, \"dailyLimit\": %d}"
                                 .formatted(dailyLimit)))
                 .andExpect(status().isBadRequest())
@@ -43,7 +44,8 @@ class OfferingControllerTest {
 
     @Test
     void shouldReturn400WhenPriceNotPositive() throws Exception {
-        mockMvc.perform(post("/api/temples/1/offerings").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/temples/1/offerings")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\": \"Archana\", \"price\": 0}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[0].field").value("price"));
@@ -55,7 +57,8 @@ class OfferingControllerTest {
         when(offeringService.createOffering(eq(1L), eq(request)))
                 .thenReturn(new OfferingResponse(7L, 1L, "Udayasthamana Pooja", new BigDecimal("5000.00"), true, 50));
 
-        mockMvc.perform(post("/api/temples/1/offerings").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/temples/1/offerings")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\": \"Udayasthamana Pooja\", \"price\": 5000, \"dailyLimit\": 50}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.dailyLimit").value(50));

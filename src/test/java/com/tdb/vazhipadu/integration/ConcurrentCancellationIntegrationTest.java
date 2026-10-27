@@ -25,18 +25,24 @@ class ConcurrentCancellationIntegrationTest {
 
     @Autowired
     private TestRestTemplate rest;
+
     @Autowired
     private Clock clock;
 
     @Test
     void shouldCancelOnlyOnceWhenTenCancelRequestsArriveTogether() throws Exception {
         var templeId = post("/api/temples", "{\"name\": \"Vaikom\"}").get("id").asLong();
-        var offeringId = post("/api/temples/%d/offerings".formatted(templeId),
-                "{\"name\": \"Archana\", \"price\": 50}").get("id").asLong();
-        var orderId = post("/api/temples/%d/orders".formatted(templeId), """
+        var offeringId = post("/api/temples/%d/offerings".formatted(templeId), "{\"name\": \"Archana\", \"price\": 50}")
+                .get("id")
+                .asLong();
+        var orderId = post(
+                        "/api/temples/%d/orders".formatted(templeId),
+                        """
                 {"devoteeName": "Devotee", "phone": "9876543210", "nakshatra": "ROHINI", "offeringDate": "%s",
                  "items": [{"offeringId": %d, "quantity": 1}]}"""
-                .formatted(LocalDate.now(clock).plusDays(1), offeringId)).get("id").asLong();
+                                .formatted(LocalDate.now(clock).plusDays(1), offeringId))
+                .get("id")
+                .asLong();
         var cancelUrl = "/api/temples/%d/orders/%d/cancel".formatted(templeId, orderId);
 
         var start = new CountDownLatch(1);

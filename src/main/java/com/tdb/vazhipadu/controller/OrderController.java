@@ -36,8 +36,8 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<OrderResponse> placeOrder(@PathVariable Long templeId,
-                                                    @Valid @RequestBody CreateOrderRequest request) {
+    public ResponseEntity<OrderResponse> placeOrder(
+            @PathVariable Long templeId, @Valid @RequestBody CreateOrderRequest request) {
         var created = orderService.placeOrder(templeId, request);
         var location = URI.create("/api/temples/%d/orders/%d".formatted(templeId, created.id()));
         return ResponseEntity.created(location).body(created);
@@ -49,7 +49,8 @@ public class OrderController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(required = false)
-            @Pattern(regexp = "|[6-9]\\d{9}", message = "must be a 10-digit Indian mobile number") String phone,
+                    @Pattern(regexp = "|[6-9]\\d{9}", message = "must be a 10-digit Indian mobile number")
+                    String phone,
             @RequestParam(defaultValue = "0") @Min(0) @Max(MAX_PAGE) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         return orderService.searchOrders(templeId, new OrderSearchCriteria(date, status, phone), page, size);

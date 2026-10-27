@@ -7,5 +7,4 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "vazhipadu")
-public record VazhipaduProperties(@NotNull ZoneId zone) {
-}
+public record VazhipaduProperties(@NotNull ZoneId zone) {}

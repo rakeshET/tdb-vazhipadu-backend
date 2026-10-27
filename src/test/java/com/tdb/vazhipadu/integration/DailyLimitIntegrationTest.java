@@ -27,6 +27,7 @@ class DailyLimitIntegrationTest {
 
     @Autowired
     private TestRestTemplate rest;
+
     @Autowired
     private Clock clock;
 
@@ -36,7 +37,10 @@ class DailyLimitIntegrationTest {
     @BeforeEach
     void createTemple() {
         tomorrow = LocalDate.now(clock).plusDays(1).toString();
-        templeId = post("/api/temples", "{\"name\": \"Guruvayur\"}").getBody().get("id").asLong();
+        templeId = post("/api/temples", "{\"name\": \"Guruvayur\"}")
+                .getBody()
+                .get("id")
+                .asLong();
     }
 
     @Test
@@ -107,9 +111,12 @@ class DailyLimitIntegrationTest {
     }
 
     private ResponseEntity<JsonNode> placeOrder(long offeringId, int quantity, String date) {
-        return post("/api/temples/%d/orders".formatted(templeId), """
+        return post(
+                "/api/temples/%d/orders".formatted(templeId),
+                """
                 {"devoteeName": "Devotee", "phone": "9876543210", "nakshatra": "ROHINI", "offeringDate": "%s",
-                 "items": [{"offeringId": %d, "quantity": %d}]}""".formatted(date, offeringId, quantity));
+                 "items": [{"offeringId": %d, "quantity": %d}]}"""
+                        .formatted(date, offeringId, quantity));
     }
 
     private ResponseEntity<JsonNode> post(String url, String json) {

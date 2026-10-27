@@ -14,5 +14,4 @@ public record OrderSummaryResponse(
         LocalDate offeringDate,
         OrderStatus status,
         BigDecimal totalAmount,
-        Instant createdAt) {
-}
+        Instant createdAt) {}
