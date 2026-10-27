@@ -42,7 +42,7 @@ class ReportControllerTest {
                 .andExpect(jsonPath("$.date").value("2026-11-01"))
                 .andExpect(jsonPath("$.timeZone").value("Asia/Kolkata"))
                 .andExpect(jsonPath("$.totalAmount").value(99.99))
-                .andExpect(jsonPath("$.offerings[0].count").value(3));
+                .andExpect(jsonPath("$.offerings[0].quantity").value(3));
     }
 
     @Test

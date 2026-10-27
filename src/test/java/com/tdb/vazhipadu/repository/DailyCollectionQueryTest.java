@@ -55,7 +55,7 @@ class DailyCollectionQueryTest {
 
         var lines = orderItemRepository.collectByOffering(temple.getId(), OrderStatus.CONFIRMED, FROM, TO);
 
-        assertThat(lines).extracting(OfferingCollection::offeringName, OfferingCollection::count)
+        assertThat(lines).extracting(OfferingCollection::offeringName, OfferingCollection::quantity)
                 .containsExactly(tuple("Archana", 1L));
     }
 
@@ -68,7 +68,7 @@ class DailyCollectionQueryTest {
 
         var lines = orderItemRepository.collectByOffering(temple.getId(), OrderStatus.CONFIRMED, FROM, TO);
 
-        assertThat(lines).extracting(OfferingCollection::count, OfferingCollection::amount)
+        assertThat(lines).extracting(OfferingCollection::quantity, OfferingCollection::amount)
                 .containsExactly(tuple(2L, new BigDecimal("60.00")));
     }
 
@@ -81,7 +81,7 @@ class DailyCollectionQueryTest {
         var lines = orderItemRepository.collectByOffering(temple.getId(), OrderStatus.CONFIRMED, FROM, TO);
 
         assertThat(lines)
-                .extracting(OfferingCollection::offeringName, OfferingCollection::count, OfferingCollection::amount)
+                .extracting(OfferingCollection::offeringName, OfferingCollection::quantity, OfferingCollection::amount)
                 .containsExactly(
                         tuple("Archana", 3L, new BigDecimal("99.99")),
                         tuple("Pushpanjali", 1L, new BigDecimal("30.00")));
