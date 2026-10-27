@@ -7,10 +7,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.tdb.vazhipadu.dto.request.CreateOrderRequest;
 import com.tdb.vazhipadu.dto.request.OrderItemRequest;
+import com.tdb.vazhipadu.dto.request.OrderSearchCriteria;
 import com.tdb.vazhipadu.dto.response.OrderItemResponse;
 import com.tdb.vazhipadu.entity.Nakshatra;
 import com.tdb.vazhipadu.entity.Offering;
@@ -141,6 +143,16 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.getOrder(TEMPLE_ID, 5L))
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    @Test
+    void shouldThrowNotFoundWhenSearchingOrdersOfUnknownTemple() {
+        when(templeService.findTempleOrThrow(99L)).thenThrow(ApiException.notFound("Temple", 99L));
+
+        assertThatThrownBy(() -> orderService.searchOrders(99L, new OrderSearchCriteria(null, null, null), 0, 20))
+                .isInstanceOfSatisfying(ApiException.class,
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
+        verifyNoInteractions(orderRepository);
     }
 
     private static CreateOrderRequest request(LocalDate date, OrderItemRequest... items) {

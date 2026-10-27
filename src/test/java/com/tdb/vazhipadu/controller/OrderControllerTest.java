@@ -14,10 +14,11 @@ import com.tdb.vazhipadu.dto.request.OrderSearchCriteria;
 import com.tdb.vazhipadu.dto.response.PageResponse;
 import com.tdb.vazhipadu.entity.OrderStatus;
 import com.tdb.vazhipadu.exception.ApiException;
-import java.time.LocalDate;
-import java.util.List;
 import com.tdb.vazhipadu.exception.ErrorCode;
 import com.tdb.vazhipadu.service.OrderService;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -144,6 +145,35 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(2))
                 .andExpect(jsonPath("$.size").value(50));
+    }
+
+    @Test
+    void shouldTreatBlankSearchParamsAsNoFilter() throws Exception {
+        var noFilter = new OrderSearchCriteria(null, null, null);
+        when(orderService.searchOrders(1L, noFilter, 0, 20))
+                .thenReturn(new PageResponse<>(List.of(), 0, 20, 0, 0, false));
+
+        mockMvc.perform(get("/api/temples/1/orders").param("date", "").param("status", "").param("phone", ""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(0));
+    }
+
+    @Test
+    void shouldReturn400WhenPageWouldOverflowOffset() throws Exception {
+        mockMvc.perform(get("/api/temples/1/orders").param("page", "21474837").param("size", "100"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("page"));
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void shouldMapUniqueOfferingNameViolationToDuplicateOffering() throws Exception {
+        var cause = new SQLException("Unique index or primary key violation: \"PUBLIC.UQ_OFFERING_TEMPLE_NAME\"");
+        when(orderService.getOrder(1L, 1L)).thenThrow(new DataIntegrityViolationException("insert failed", cause));
+
+        mockMvc.perform(get("/api/temples/1/orders/1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DUPLICATE_OFFERING"));
     }
 
     @Test

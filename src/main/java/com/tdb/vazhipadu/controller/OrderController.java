@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/temples/{templeId}/orders")
 public class OrderController {
 
+    private static final int MAX_PAGE = 1_000_000;
+
     private final OrderService orderService;
 
     public OrderController(OrderService orderService) {
@@ -47,8 +49,8 @@ public class OrderController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(required = false)
-            @Pattern(regexp = "[6-9]\\d{9}", message = "must be a 10-digit Indian mobile number") String phone,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Pattern(regexp = "|[6-9]\\d{9}", message = "must be a 10-digit Indian mobile number") String phone,
+            @RequestParam(defaultValue = "0") @Min(0) @Max(MAX_PAGE) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         return orderService.searchOrders(templeId, new OrderSearchCriteria(date, status, phone), page, size);
     }
