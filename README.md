@@ -90,7 +90,7 @@ Every error uses the same JSON shape:
 |--------|-------|
 | 400 | `VALIDATION_FAILED`, `MALFORMED_REQUEST` |
 | 404 | `NOT_FOUND` |
-| 409 | `DUPLICATE_OFFERING` |
+| 409 | `DUPLICATE_OFFERING`, `DATA_CONFLICT` |
 | 422 | `OFFERING_INACTIVE`, `UNKNOWN_OFFERING` |
 
 ## Pull requests
