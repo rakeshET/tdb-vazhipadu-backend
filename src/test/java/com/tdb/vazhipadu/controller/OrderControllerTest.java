@@ -10,9 +10,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.tdb.vazhipadu.dto.request.OrderSearchCriteria;
+import com.tdb.vazhipadu.dto.response.PageResponse;
+import com.tdb.vazhipadu.entity.OrderStatus;
 import com.tdb.vazhipadu.exception.ApiException;
 import com.tdb.vazhipadu.exception.ErrorCode;
 import com.tdb.vazhipadu.service.OrderService;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -125,6 +131,72 @@ class OrderControllerTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("REQUEST_REJECTED"))
                 .andExpect(jsonPath("$.message").value("Try again later"));
+    }
+
+    @Test
+    void shouldPassSearchFiltersAndPagingToService() throws Exception {
+        var criteria = new OrderSearchCriteria(LocalDate.of(2026, 11, 1), OrderStatus.CONFIRMED, "9876543210");
+        when(orderService.searchOrders(1L, criteria, 2, 50))
+                .thenReturn(new PageResponse<>(List.of(), 2, 50, 0, 0, false));
+
+        mockMvc.perform(get("/api/temples/1/orders")
+                        .param("date", "2026-11-01").param("status", "confirmed")
+                        .param("phone", "9876543210").param("page", "2").param("size", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.size").value(50));
+    }
+
+    @Test
+    void shouldTreatBlankSearchParamsAsNoFilter() throws Exception {
+        var noFilter = new OrderSearchCriteria(null, null, null);
+        when(orderService.searchOrders(1L, noFilter, 0, 20))
+                .thenReturn(new PageResponse<>(List.of(), 0, 20, 0, 0, false));
+
+        mockMvc.perform(get("/api/temples/1/orders").param("date", "").param("status", "").param("phone", ""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(0));
+    }
+
+    @Test
+    void shouldReturn400WhenPageWouldOverflowOffset() throws Exception {
+        mockMvc.perform(get("/api/temples/1/orders").param("page", "21474837").param("size", "100"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("page"));
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void shouldMapUniqueOfferingNameViolationToDuplicateOffering() throws Exception {
+        var cause = new SQLException("Unique index or primary key violation: \"PUBLIC.UQ_OFFERING_TEMPLE_NAME\"");
+        when(orderService.getOrder(1L, 1L)).thenThrow(new DataIntegrityViolationException("insert failed", cause));
+
+        mockMvc.perform(get("/api/temples/1/orders/1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DUPLICATE_OFFERING"));
+    }
+
+    @Test
+    void shouldReturn400WhenSearchPhoneInvalid() throws Exception {
+        mockMvc.perform(get("/api/temples/1/orders").param("phone", "12345"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors[0].field").value("phone"));
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void shouldReturn400WhenPageSizeAboveLimit() throws Exception {
+        mockMvc.perform(get("/api/temples/1/orders").param("size", "500"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("size"));
+    }
+
+    @Test
+    void shouldReturn400WhenSearchDateUnparseable() throws Exception {
+        mockMvc.perform(get("/api/temples/1/orders").param("date", "01-11-2026"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
     }
 
     @Test

@@ -2,7 +2,10 @@ package com.tdb.vazhipadu.service;
 
 import com.tdb.vazhipadu.dto.request.CreateOrderRequest;
 import com.tdb.vazhipadu.dto.request.OrderItemRequest;
+import com.tdb.vazhipadu.dto.request.OrderSearchCriteria;
 import com.tdb.vazhipadu.dto.response.OrderResponse;
+import com.tdb.vazhipadu.dto.response.OrderSummaryResponse;
+import com.tdb.vazhipadu.dto.response.PageResponse;
 import com.tdb.vazhipadu.entity.OfferingOrder;
 import com.tdb.vazhipadu.entity.Offering;
 import com.tdb.vazhipadu.exception.ApiException;
@@ -10,6 +13,7 @@ import com.tdb.vazhipadu.exception.ErrorCode;
 import com.tdb.vazhipadu.mapper.OrderMapper;
 import com.tdb.vazhipadu.repository.OfferingRepository;
 import com.tdb.vazhipadu.repository.OrderRepository;
+import com.tdb.vazhipadu.repository.OrderSpecifications;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -20,6 +24,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +67,15 @@ public class OrderService {
         return orderRepository.findWithItemsByIdAndTempleId(orderId, templeId)
                 .map(OrderMapper::toResponse)
                 .orElseThrow(() -> ApiException.notFound("Order", orderId));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<OrderSummaryResponse> searchOrders(Long templeId, OrderSearchCriteria criteria,
+                                                           int page, int size) {
+        templeService.findTempleOrThrow(templeId);
+        var pageable = PageRequest.of(page, size, Sort.by("id"));
+        var orders = orderRepository.findAll(OrderSpecifications.matching(templeId, criteria), pageable);
+        return PageResponse.from(orders.map(OrderMapper::toSummary));
     }
 
     private void requireNotInPast(LocalDate offeringDate) {
