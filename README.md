@@ -102,20 +102,22 @@ curl 'localhost:8080/api/temples/1/orders?phone=9876543210&status=CONFIRMED&page
 
 - `POST …/orders/{id}/cancel` sets the status to `CANCELLED` and records `cancelledAt`. Cancelled orders no
   longer count towards daily limits, so their slots are bookable again.
-- Cancelling twice returns `409 ORDER_ALREADY_CANCELLED`. Orders whose offering date has passed (in IST)
-  can't be cancelled (`422 ORDER_NOT_CANCELLABLE`), so a closed day's collection never changes afterwards.
+- Only orders **placed today (IST)** can be cancelled. Older orders return `422 ORDER_NOT_CANCELLABLE`, so a day
+  finance has reconciled never changes afterwards. Changing older bookings needs a refund process, which is out of scope.
+- The order row is locked while cancelling, so simultaneous cancels of the same order give one `200` and the rest
+  `409 ORDER_ALREADY_CANCELLED`.
 
 ### Daily collection report
 
 ```bash
 curl 'localhost:8080/api/temples/1/reports/daily-collection?date=2026-11-01'
 # -> {"templeId":1,"date":"2026-11-01","timeZone":"Asia/Kolkata","totalAmount":5100.49,
-#     "offerings":[{"offeringId":2,"offeringName":"Archana","count":3,"amount":99.99}, ...]}
+#     "offerings":[{"offeringId":2,"offeringName":"Archana","quantity":3,"amount":99.99}, ...]}
 ```
 
 - The day is the IST calendar day on which an order was **placed** (`[00:00, 24:00)` in `Asia/Kolkata`), so an
   order placed at 00:15 IST counts on that date.
-- Only `CONFIRMED` orders are included. `count` is the number of rituals (summed quantity) and `amount` is the
+- Only `CONFIRMED` orders are included. `quantity` is the number of rituals (summed quantity) and `amount` is the
   exact sum of line totals.
 - Money is `DECIMAL` in the database and `BigDecimal` in Java. It is aggregated in SQL per offering, and
   `totalAmount` is the sum of the offering amounts, so the two always match to the paisa.
