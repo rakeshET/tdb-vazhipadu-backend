@@ -36,7 +36,7 @@ public class OrderItem {
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
-    @Column(name = "line_total", nullable = false, precision = 12, scale = 2)
+    @Column(name = "line_total", nullable = false, precision = 14, scale = 2)
     private BigDecimal lineTotal;
 
     protected OrderItem() {

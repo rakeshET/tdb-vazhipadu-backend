@@ -9,11 +9,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "offering", uniqueConstraints = @UniqueConstraint(columnNames = {"temple_id", "name"}))
+@Table(name = "offering")
 public class Offering {
 
     @Id
