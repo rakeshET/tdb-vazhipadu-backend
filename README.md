@@ -122,5 +122,5 @@ Every error uses the same JSON shape:
 |---------|----|
 | P1 – Offerings and Orders API | [#5](https://github.com/rakeshET/tdb-vazhipadu-backend/pull/5) |
 | P2 – Order Search | [#6](https://github.com/rakeshET/tdb-vazhipadu-backend/pull/6) |
-| P3 – Daily Limits | _pending_ |
+| P3 – Daily Limits | [#7](https://github.com/rakeshET/tdb-vazhipadu-backend/pull/7) |
 | P4 – Cancellation and Daily Collection | _pending_ |
