@@ -43,7 +43,7 @@ com.tdb.vazhipadu
 |--------|------|---------|
 | POST | `/api/temples` | Create a temple |
 | GET | `/api/temples/{templeId}` | Get a temple |
-| POST | `/api/temples/{templeId}/offerings` | Add an offering (name, price, active) |
+| POST | `/api/temples/{templeId}/offerings` | Add an offering (name, price, active, optional dailyLimit) |
 | GET | `/api/temples/{templeId}/offerings` | List a temple's offerings |
 | GET | `/api/temples/{templeId}/offerings/{offeringId}` | Get an offering |
 | PUT | `/api/temples/{templeId}/offerings/{offeringId}` | Update an offering, including activating or deactivating it |
@@ -84,6 +84,18 @@ curl 'localhost:8080/api/temples/1/orders?phone=9876543210&status=CONFIRMED&page
   the common searches and their sort without scanning the table. `OrderRepositorySearchTest` asserts this
   with `EXPLAIN`.
 
+### Daily limits
+
+- An offering may set `dailyLimit` (e.g. 50 Udayasthamana Poojas). Omitting it, or sending `null`, means unlimited,
+  including on `PUT`, so send the current limit when updating other fields.
+- An order is rejected with `409 DAILY_LIMIT_EXCEEDED` when the confirmed quantity for that offering on the
+  offering date plus the requested quantity would exceed the limit. Cancelled orders don't count.
+- Simultaneous orders are serialised per limited offering. The offering row is re-read with
+  `SELECT … FOR UPDATE`, so the limit and active flag are checked against current data. Locks are taken in
+  offering-id order so multi-offering orders cannot deadlock. Offerings without a limit are never locked.
+- If the lock can't be acquired within 10 s (the `jakarta.persistence.lock.timeout` hint, plus H2's
+  `LOCK_TIMEOUT`), the API returns `503 TRY_AGAIN` with `Retry-After: 1`.
+
 ### Error format
 
 Every error uses the same JSON shape:
@@ -103,8 +115,9 @@ Every error uses the same JSON shape:
 |--------|-------|
 | 400 | `VALIDATION_FAILED`, `MALFORMED_REQUEST` |
 | 404 | `NOT_FOUND` |
-| 409 | `DUPLICATE_OFFERING`, `DATA_CONFLICT` |
+| 409 | `DUPLICATE_OFFERING`, `DAILY_LIMIT_EXCEEDED`, `DATA_CONFLICT` |
 | 422 | `OFFERING_INACTIVE`, `UNKNOWN_OFFERING` |
+| 503 | `TRY_AGAIN` |
 
 ## Pull requests
 
@@ -112,5 +125,5 @@ Every error uses the same JSON shape:
 |---------|----|
 | P1 – Offerings and Orders API | [#5](https://github.com/rakeshET/tdb-vazhipadu-backend/pull/5) |
 | P2 – Order Search | [#6](https://github.com/rakeshET/tdb-vazhipadu-backend/pull/6) |
-| P3 – Daily Limits | _pending_ |
+| P3 – Daily Limits | [#7](https://github.com/rakeshET/tdb-vazhipadu-backend/pull/7) |
 | P4 – Cancellation and Daily Collection | _pending_ |

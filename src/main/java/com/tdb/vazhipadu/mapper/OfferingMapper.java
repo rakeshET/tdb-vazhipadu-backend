@@ -10,6 +10,6 @@ public final class OfferingMapper {
 
     public static OfferingResponse toResponse(Offering offering) {
         return new OfferingResponse(offering.getId(), offering.getTemple().getId(), offering.getName(),
-                offering.getPrice(), offering.isActive());
+                offering.getPrice(), offering.isActive(), offering.getDailyLimit());
     }
 }

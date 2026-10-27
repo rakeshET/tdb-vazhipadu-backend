@@ -31,7 +31,8 @@ public class OfferingService {
         if (offeringRepository.existsByTempleIdAndNameIgnoreCase(templeId, name)) {
             throw duplicateOffering(name);
         }
-        var offering = new Offering(temple, name, normalise(request.price()), request.activeOr(true));
+        var offering = new Offering(temple, name, normalise(request.price()), request.activeOr(true),
+                request.dailyLimit());
         return OfferingMapper.toResponse(offeringRepository.save(offering));
     }
 
@@ -42,7 +43,8 @@ public class OfferingService {
         if (offeringRepository.existsByTempleIdAndNameIgnoreCaseAndIdNot(templeId, name, offeringId)) {
             throw duplicateOffering(name);
         }
-        offering.update(name, normalise(request.price()), request.activeOr(offering.isActive()));
+        offering.update(name, normalise(request.price()), request.activeOr(offering.isActive()),
+                request.dailyLimit());
         return OfferingMapper.toResponse(offering);
     }
 

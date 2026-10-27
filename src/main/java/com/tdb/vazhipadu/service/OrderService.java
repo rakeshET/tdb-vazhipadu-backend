@@ -37,13 +37,15 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OfferingRepository offeringRepository;
     private final TempleService templeService;
+    private final DailyLimitService dailyLimitService;
     private final Clock clock;
 
     public OrderService(OrderRepository orderRepository, OfferingRepository offeringRepository,
-                        TempleService templeService, Clock clock) {
+                        TempleService templeService, DailyLimitService dailyLimitService, Clock clock) {
         this.orderRepository = orderRepository;
         this.offeringRepository = offeringRepository;
         this.templeService = templeService;
+        this.dailyLimitService = dailyLimitService;
         this.clock = clock;
     }
 
@@ -52,6 +54,7 @@ public class OrderService {
         var temple = templeService.findTempleOrThrow(templeId);
         requireNotInPast(request.offeringDate());
         var offerings = findBookableOfferings(templeId, request.items());
+        dailyLimitService.ensureCapacity(request.offeringDate(), request.items(), offerings);
 
         var order = new OfferingOrder(temple, request.devoteeName().strip(), request.phone(), request.nakshatra(),
                 request.offeringDate(), Instant.now(clock));

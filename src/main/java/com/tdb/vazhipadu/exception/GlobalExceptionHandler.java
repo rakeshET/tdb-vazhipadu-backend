@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -100,6 +102,16 @@ public class GlobalExceptionHandler {
             return build(ErrorCode.DUPLICATE_OFFERING, "Offering already exists for this temple", request, List.of());
         }
         return build(ErrorCode.DATA_CONFLICT, "Request conflicts with existing data", request, List.of());
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    ResponseEntity<ApiError> handleLockTimeout(PessimisticLockingFailureException ex, HttpServletRequest request) {
+        log.warn("Lock not acquired on {} {}", request.getMethod(), request.getRequestURI());
+        var response = build(ErrorCode.TRY_AGAIN, "Too many simultaneous bookings, please retry", request,
+                List.of());
+        return ResponseEntity.status(response.getStatusCode())
+                .header(HttpHeaders.RETRY_AFTER, "1")
+                .body(response.getBody());
     }
 
     @ExceptionHandler(Exception.class)
