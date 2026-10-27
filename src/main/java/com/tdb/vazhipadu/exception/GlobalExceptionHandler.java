@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final String VALIDATION_MESSAGE = "Request validation failed";
+    private static final String UNIQUE_OFFERING_NAME = "uq_offering_temple_name";
 
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ApiError> handleApi(ApiException ex, HttpServletRequest request) {
@@ -94,6 +96,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
         log.warn("Data integrity violation on {} {}", request.getMethod(), request.getRequestURI());
+        if (violates(ex, UNIQUE_OFFERING_NAME)) {
+            return build(ErrorCode.DUPLICATE_OFFERING, "Offering already exists for this temple", request, List.of());
+        }
         return build(ErrorCode.DATA_CONFLICT, "Request conflicts with existing data", request, List.of());
     }
 
@@ -107,6 +112,11 @@ public class GlobalExceptionHandler {
         }
         log.error("Unhandled error on {} {}", request.getMethod(), request.getRequestURI(), ex);
         return build(ErrorCode.INTERNAL_ERROR, "Unexpected error", request, List.of());
+    }
+
+    private static boolean violates(DataIntegrityViolationException ex, String constraint) {
+        var message = ex.getMostSpecificCause().getMessage();
+        return message != null && message.toLowerCase(Locale.ROOT).contains(constraint);
     }
 
     private static String fieldPath(MismatchedInputException mismatch) {
