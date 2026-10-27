@@ -25,11 +25,13 @@ class OrderSearchIntegrationTest {
 
     private static final String RAVI = "9876543210";
     private static final String MEERA = "9123456789";
+
     @Autowired
     private Clock clock;
 
     @Autowired
     private MockMvc mockMvc;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -39,9 +41,12 @@ class OrderSearchIntegrationTest {
     @BeforeEach
     void seedOrders() throws Exception {
         tomorrow = LocalDate.now(clock).plusDays(1).toString();
-        templeId = create("/api/temples", "{\"name\": \"Ettumanoor\"}").get("id").asLong();
-        var offeringId = create("/api/temples/%d/offerings".formatted(templeId),
-                "{\"name\": \"Archana\", \"price\": 50}").get("id").asLong();
+        templeId =
+                create("/api/temples", "{\"name\": \"Ettumanoor\"}").get("id").asLong();
+        var offeringId = create(
+                        "/api/temples/%d/offerings".formatted(templeId), "{\"name\": \"Archana\", \"price\": 50}")
+                .get("id")
+                .asLong();
         for (int i = 0; i < 7; i++) {
             placeOrder(offeringId, i % 2 == 0 ? RAVI : MEERA);
         }
@@ -52,7 +57,8 @@ class OrderSearchIntegrationTest {
         var page = search("phone=" + RAVI + "&size=100");
 
         assertThat(page.get("totalElements").asInt()).isEqualTo(4);
-        page.get("content").forEach(order -> assertThat(order.get("phone").asText()).isEqualTo(RAVI));
+        page.get("content")
+                .forEach(order -> assertThat(order.get("phone").asText()).isEqualTo(RAVI));
     }
 
     @Test
@@ -69,15 +75,21 @@ class OrderSearchIntegrationTest {
 
     @Test
     void shouldFilterByDateAndStatus() throws Exception {
-        assertThat(search("date=" + tomorrow + "&status=CONFIRMED").get("totalElements").asInt()).isEqualTo(7);
+        assertThat(search("date=" + tomorrow + "&status=CONFIRMED")
+                        .get("totalElements")
+                        .asInt())
+                .isEqualTo(7);
         assertThat(search("status=CANCELLED").get("totalElements").asInt()).isZero();
         assertThat(search("date=2099-01-01").get("totalElements").asInt()).isZero();
     }
 
     private void placeOrder(long offeringId, String phone) throws Exception {
-        create("/api/temples/%d/orders".formatted(templeId), """
+        create(
+                "/api/temples/%d/orders".formatted(templeId),
+                """
                 {"devoteeName": "Devotee", "phone": "%s", "nakshatra": "ROHINI", "offeringDate": "%s",
-                 "items": [{"offeringId": %d, "quantity": 1}]}""".formatted(phone, tomorrow, offeringId));
+                 "items": [{"offeringId": %d, "quantity": 1}]}"""
+                        .formatted(phone, tomorrow, offeringId));
     }
 
     private JsonNode search(String query) throws Exception {
@@ -88,7 +100,8 @@ class OrderSearchIntegrationTest {
     }
 
     private JsonNode create(String url, String json) throws Exception {
-        var result = mockMvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content(json))
+        var result = mockMvc.perform(
+                        post(url).contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isCreated())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString());

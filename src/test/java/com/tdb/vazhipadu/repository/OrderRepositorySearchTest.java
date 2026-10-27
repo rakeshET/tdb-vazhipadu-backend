@@ -29,8 +29,10 @@ class OrderRepositorySearchTest {
 
     @Autowired
     private OrderRepository orderRepository;
+
     @Autowired
     private TempleRepository templeRepository;
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -40,8 +42,9 @@ class OrderRepositorySearchTest {
     void seed() {
         temple = templeRepository.save(new Temple("Sabarimala"));
         var otherTemple = templeRepository.save(new Temple("Guruvayur"));
-        IntStream.range(0, 25).forEach(i -> orderRepository.save(
-                order(temple, i % 2 == 0 ? RAVI : MEERA, i < 15 ? DAY_ONE : DAY_TWO, i % 5 == 0)));
+        IntStream.range(0, 25)
+                .forEach(i -> orderRepository.save(
+                        order(temple, i % 2 == 0 ? RAVI : MEERA, i < 15 ? DAY_ONE : DAY_TWO, i % 5 == 0)));
         orderRepository.save(order(otherTemple, RAVI, DAY_ONE, false));
     }
 
@@ -52,20 +55,25 @@ class OrderRepositorySearchTest {
                 PageRequest.of(0, 100, Sort.by("id")));
 
         assertThat(result.getTotalElements()).isEqualTo(13);
-        assertThat(result.getContent())
-                .allSatisfy(order -> {
-                    assertThat(order.getPhone()).isEqualTo(RAVI);
-                    assertThat(order.getTemple().getId()).isEqualTo(temple.getId());
-                });
+        assertThat(result.getContent()).allSatisfy(order -> {
+            assertThat(order.getPhone()).isEqualTo(RAVI);
+            assertThat(order.getTemple().getId()).isEqualTo(temple.getId());
+        });
     }
 
     @Test
     void shouldReturnContiguousPagesWithoutRepeatsOrGaps() {
         var spec = OrderSpecifications.matching(temple.getId(), new OrderSearchCriteria(null, null, null));
-        var all = orderRepository.findAll(spec, PageRequest.of(0, 100, Sort.by("id"))).getContent();
+        var all = orderRepository
+                .findAll(spec, PageRequest.of(0, 100, Sort.by("id")))
+                .getContent();
 
-        var first = orderRepository.findAll(spec, PageRequest.of(0, 10, Sort.by("id"))).getContent();
-        var second = orderRepository.findAll(spec, PageRequest.of(1, 10, Sort.by("id"))).getContent();
+        var first = orderRepository
+                .findAll(spec, PageRequest.of(0, 10, Sort.by("id")))
+                .getContent();
+        var second = orderRepository
+                .findAll(spec, PageRequest.of(1, 10, Sort.by("id")))
+                .getContent();
 
         assertThat(first).hasSize(10);
         assertThat(second).hasSize(10).doesNotContainAnyElementsOf(first);
@@ -77,15 +85,14 @@ class OrderRepositorySearchTest {
     @Test
     void shouldCombineDateAndStatusFilters() {
         var result = orderRepository.findAll(
-                OrderSpecifications.matching(temple.getId(),
-                        new OrderSearchCriteria(DAY_ONE, OrderStatus.CANCELLED, null)),
+                OrderSpecifications.matching(
+                        temple.getId(), new OrderSearchCriteria(DAY_ONE, OrderStatus.CANCELLED, null)),
                 PageRequest.of(0, 100, Sort.by("id")));
 
-        assertThat(result.getContent()).hasSize(3)
-                .allSatisfy(order -> {
-                    assertThat(order.getOfferingDate()).isEqualTo(DAY_ONE);
-                    assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-                });
+        assertThat(result.getContent()).hasSize(3).allSatisfy(order -> {
+            assertThat(order.getOfferingDate()).isEqualTo(DAY_ONE);
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        });
     }
 
     @Test

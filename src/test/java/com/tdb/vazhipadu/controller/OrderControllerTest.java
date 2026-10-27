@@ -42,41 +42,49 @@ class OrderControllerTest {
 
     @Test
     void shouldReturn400WithFieldErrorsWhenBodyInvalid() throws Exception {
-        var body = """
+        var body =
+                """
                 {"devoteeName": " ", "phone": "12345", "nakshatra": "ROHINI",
                  "offeringDate": "2026-11-01", "items": []}
                 """;
 
-        mockMvc.perform(post("/api/temples/1/orders").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/temples/1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.path").value("/api/temples/1/orders"))
-                .andExpect(jsonPath("$.errors[*].field").value(
-                        containsInAnyOrder("devoteeName", "items", "phone")));
+                .andExpect(jsonPath("$.errors[*].field").value(containsInAnyOrder("devoteeName", "items", "phone")));
         verifyNoInteractions(orderService);
     }
 
     @Test
     void shouldReturn400WhenItemQuantityIsZero() throws Exception {
-        var body = """
+        var body =
+                """
                 {"devoteeName": "Ravi", "phone": "9876543210", "nakshatra": "ROHINI",
                  "offeringDate": "2026-11-01", "items": [{"offeringId": 1, "quantity": 0}]}
                 """;
 
-        mockMvc.perform(post("/api/temples/1/orders").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/temples/1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[0].field").value("items[0].quantity"));
     }
 
     @Test
     void shouldReturn400NamingFieldWhenNakshatraUnknown() throws Exception {
-        var body = """
+        var body =
+                """
                 {"devoteeName": "Ravi", "phone": "9876543210", "nakshatra": "PLUTO",
                  "offeringDate": "2026-11-01", "items": [{"offeringId": 1, "quantity": 1}]}
                 """;
 
-        mockMvc.perform(post("/api/temples/1/orders").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/temples/1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"))
                 .andExpect(jsonPath("$.errors[0].field").value("nakshatra"));
@@ -86,12 +94,15 @@ class OrderControllerTest {
     void shouldMapBusinessRuleViolationTo422() throws Exception {
         when(orderService.placeOrder(eq(1L), any()))
                 .thenThrow(new ApiException(ErrorCode.OFFERING_INACTIVE, "Offering 'Archana' is not currently active"));
-        var body = """
+        var body =
+                """
                 {"devoteeName": "Ravi", "phone": "9876543210", "nakshatra": "rohini",
                  "offeringDate": "2026-11-01", "items": [{"offeringId": 1, "quantity": 1}]}
                 """;
 
-        mockMvc.perform(post("/api/temples/1/orders").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/temples/1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("OFFERING_INACTIVE"))
                 .andExpect(jsonPath("$.message").value("Offering 'Archana' is not currently active"));
@@ -142,8 +153,11 @@ class OrderControllerTest {
                 .thenReturn(new PageResponse<>(List.of(), 2, 50, 0, 0, false));
 
         mockMvc.perform(get("/api/temples/1/orders")
-                        .param("date", "2026-11-01").param("status", "confirmed")
-                        .param("phone", "9876543210").param("page", "2").param("size", "50"))
+                        .param("date", "2026-11-01")
+                        .param("status", "confirmed")
+                        .param("phone", "9876543210")
+                        .param("page", "2")
+                        .param("size", "50"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(2))
                 .andExpect(jsonPath("$.size").value(50));
@@ -155,7 +169,10 @@ class OrderControllerTest {
         when(orderService.searchOrders(1L, noFilter, 0, 20))
                 .thenReturn(new PageResponse<>(List.of(), 0, 20, 0, 0, false));
 
-        mockMvc.perform(get("/api/temples/1/orders").param("date", "").param("status", "").param("phone", ""))
+        mockMvc.perform(get("/api/temples/1/orders")
+                        .param("date", "")
+                        .param("status", "")
+                        .param("phone", ""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(0));
     }
@@ -181,12 +198,15 @@ class OrderControllerTest {
     @Test
     void shouldReturn503WithRetryAfterWhenBookingLockTimesOut() throws Exception {
         when(orderService.placeOrder(eq(1L), any())).thenThrow(new CannotAcquireLockException("lock timeout"));
-        var body = """
+        var body =
+                """
                 {"devoteeName": "Ravi", "phone": "9876543210", "nakshatra": "ROHINI",
                  "offeringDate": "2026-11-01", "items": [{"offeringId": 1, "quantity": 1}]}
                 """;
 
-        mockMvc.perform(post("/api/temples/1/orders").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/temples/1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(header().string("Retry-After", "1"))
                 .andExpect(jsonPath("$.code").value("TRY_AGAIN"));
@@ -194,8 +214,10 @@ class OrderControllerTest {
 
     @Test
     void shouldReturn422WhenCancellingOrderFromEarlierDay() throws Exception {
-        when(orderService.cancelOrder(1L, 5L)).thenThrow(new ApiException(ErrorCode.ORDER_NOT_CANCELLABLE,
-                "Order 5 was placed on an earlier day; only same-day orders can be cancelled"));
+        when(orderService.cancelOrder(1L, 5L))
+                .thenThrow(new ApiException(
+                        ErrorCode.ORDER_NOT_CANCELLABLE,
+                        "Order 5 was placed on an earlier day; only same-day orders can be cancelled"));
 
         mockMvc.perform(post("/api/temples/1/orders/5/cancel"))
                 .andExpect(status().isUnprocessableEntity())

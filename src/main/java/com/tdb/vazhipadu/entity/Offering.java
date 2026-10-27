@@ -35,8 +35,7 @@ public class Offering {
     @Column(name = "daily_limit")
     private Integer dailyLimit;
 
-    protected Offering() {
-    }
+    protected Offering() {}
 
     public Offering(Temple temple, String name, BigDecimal price, boolean active) {
         this(temple, name, price, active, null);

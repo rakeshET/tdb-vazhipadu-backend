@@ -29,6 +29,7 @@ class ReportServiceTest {
 
     @Mock
     private OrderItemRepository orderItemRepository;
+
     @Mock
     private TempleService templeService;
 

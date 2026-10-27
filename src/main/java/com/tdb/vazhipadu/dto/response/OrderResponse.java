@@ -18,5 +18,4 @@ public record OrderResponse(
         BigDecimal totalAmount,
         Instant createdAt,
         Instant cancelledAt,
-        List<OrderItemResponse> items) {
-}
+        List<OrderItemResponse> items) {}

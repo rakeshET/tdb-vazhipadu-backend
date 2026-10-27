@@ -33,9 +33,13 @@ class ReportControllerTest {
 
     @Test
     void shouldReturnReportWithExactDecimalAmounts() throws Exception {
-        when(reportService.dailyCollection(1L, DATE)).thenReturn(new DailyCollectionReport(1L, DATE,
-                ZoneId.of("Asia/Kolkata"), new BigDecimal("99.99"),
-                List.of(new OfferingCollection(4L, "Archana", 3L, new BigDecimal("99.99")))));
+        when(reportService.dailyCollection(1L, DATE))
+                .thenReturn(new DailyCollectionReport(
+                        1L,
+                        DATE,
+                        ZoneId.of("Asia/Kolkata"),
+                        new BigDecimal("99.99"),
+                        List.of(new OfferingCollection(4L, "Archana", 3L, new BigDecimal("99.99")))));
 
         mockMvc.perform(get("/api/temples/1/reports/daily-collection").param("date", "2026-11-01"))
                 .andExpect(status().isOk())

@@ -22,10 +22,12 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class OrderFlowIntegrationTest {
 
-    private static final String TOMORROW = LocalDate.now(ZoneId.of("Asia/Kolkata")).plusDays(1).toString();
+    private static final String TOMORROW =
+            LocalDate.now(ZoneId.of("Asia/Kolkata")).plusDays(1).toString();
 
     @Autowired
     private MockMvc mockMvc;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -42,8 +44,9 @@ class OrderFlowIntegrationTest {
         var pushpanjali = createOffering("Pushpanjali", "30", true);
         var archana = createOffering("Archana", "50", true);
 
-        var orderId = postForId("/api/temples/%d/orders".formatted(templeId), orderJson(
-                "[{\"offeringId\": %d, \"quantity\": 2}, {\"offeringId\": %d, \"quantity\": 1}]"
+        var orderId = postForId(
+                "/api/temples/%d/orders".formatted(templeId),
+                orderJson("[{\"offeringId\": %d, \"quantity\": 2}, {\"offeringId\": %d, \"quantity\": 1}]"
                         .formatted(pushpanjali, archana)));
 
         mockMvc.perform(get("/api/temples/%d/orders/%d".formatted(templeId, orderId)))
@@ -100,21 +103,27 @@ class OrderFlowIntegrationTest {
     }
 
     private long createOffering(String name, String price, boolean active) throws Exception {
-        return postForId("/api/temples/%d/offerings".formatted(templeId),
+        return postForId(
+                "/api/temples/%d/offerings".formatted(templeId),
                 "{\"name\": \"%s\", \"price\": %s, \"active\": %s}".formatted(name, price, active));
     }
 
     private static String orderJson(String items) {
         return """
                 {"devoteeName": "Ravi", "phone": "9876543210", "nakshatra": "ROHINI",
-                 "offeringDate": "%s", "items": %s}""".formatted(TOMORROW, items);
+                 "offeringDate": "%s", "items": %s}"""
+                .formatted(TOMORROW, items);
     }
 
     private long postForId(String url, String json) throws Exception {
-        var result = mockMvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content(json))
+        var result = mockMvc.perform(
+                        post(url).contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andReturn();
-        return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
+        return objectMapper
+                .readTree(result.getResponse().getContentAsString())
+                .get("id")
+                .asLong();
     }
 }

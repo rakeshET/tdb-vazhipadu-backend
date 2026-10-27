@@ -18,8 +18,7 @@ public class Temple {
     @Column(nullable = false, length = 150)
     private String name;
 
-    protected Temple() {
-    }
+    protected Temple() {}
 
     public Temple(String name) {
         this.name = name;

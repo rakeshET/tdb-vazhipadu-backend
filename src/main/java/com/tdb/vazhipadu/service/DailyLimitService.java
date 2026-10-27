@@ -40,8 +40,8 @@ public class DailyLimitService {
     private void reserve(Offering offering, LocalDate offeringDate, int quantity) {
         entityManager.refresh(offering, LockModeType.PESSIMISTIC_WRITE, LOCK_TIMEOUT);
         if (!offering.isActive()) {
-            throw new ApiException(ErrorCode.OFFERING_INACTIVE,
-                    "Offering '%s' is not currently active".formatted(offering.getName()));
+            throw new ApiException(
+                    ErrorCode.OFFERING_INACTIVE, "Offering '%s' is not currently active".formatted(offering.getName()));
         }
         if (!offering.hasDailyLimit()) {
             return;
@@ -49,9 +49,10 @@ public class DailyLimitService {
         var booked = orderItemRepository.sumQuantity(offering.getId(), offeringDate, OrderStatus.CONFIRMED);
         var limit = offering.getDailyLimit();
         if (booked + quantity > limit) {
-            throw new ApiException(ErrorCode.DAILY_LIMIT_EXCEEDED,
-                    "'%s' has %d of %d slots left on %s".formatted(
-                            offering.getName(), Math.max(0, limit - booked), limit, offeringDate));
+            throw new ApiException(
+                    ErrorCode.DAILY_LIMIT_EXCEEDED,
+                    "'%s' has %d of %d slots left on %s"
+                            .formatted(offering.getName(), Math.max(0, limit - booked), limit, offeringDate));
         }
     }
 }

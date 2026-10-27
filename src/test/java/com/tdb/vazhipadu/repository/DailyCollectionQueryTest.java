@@ -29,10 +29,13 @@ class DailyCollectionQueryTest {
 
     @Autowired
     private TempleRepository templeRepository;
+
     @Autowired
     private OfferingRepository offeringRepository;
+
     @Autowired
     private OrderRepository orderRepository;
+
     @Autowired
     private OrderItemRepository orderItemRepository;
 
@@ -55,7 +58,8 @@ class DailyCollectionQueryTest {
 
         var lines = orderItemRepository.collectByOffering(temple.getId(), OrderStatus.CONFIRMED, FROM, TO);
 
-        assertThat(lines).extracting(OfferingCollection::offeringName, OfferingCollection::quantity)
+        assertThat(lines)
+                .extracting(OfferingCollection::offeringName, OfferingCollection::quantity)
                 .containsExactly(tuple("Archana", 1L));
     }
 
@@ -68,7 +72,8 @@ class DailyCollectionQueryTest {
 
         var lines = orderItemRepository.collectByOffering(temple.getId(), OrderStatus.CONFIRMED, FROM, TO);
 
-        assertThat(lines).extracting(OfferingCollection::quantity, OfferingCollection::amount)
+        assertThat(lines)
+                .extracting(OfferingCollection::quantity, OfferingCollection::amount)
                 .containsExactly(tuple(2L, new BigDecimal("60.00")));
     }
 
@@ -91,16 +96,22 @@ class DailyCollectionQueryTest {
     void shouldExcludeOtherTemples() {
         var otherTemple = templeRepository.save(new Temple("Guruvayur"));
         var otherArchana = offeringRepository.save(new Offering(otherTemple, "Archana", new BigDecimal("40.00"), true));
-        var order = new OfferingOrder(otherTemple, "Devotee", "9876543210", Nakshatra.ROHINI, DATE,
-                Instant.parse("2026-11-01T04:00:00Z"));
+        var order = new OfferingOrder(
+                otherTemple, "Devotee", "9876543210", Nakshatra.ROHINI, DATE, Instant.parse("2026-11-01T04:00:00Z"));
         order.addItem(otherArchana, 1);
         orderRepository.saveAndFlush(order);
 
-        assertThat(orderItemRepository.collectByOffering(temple.getId(), OrderStatus.CONFIRMED, FROM, TO)).isEmpty();
+        assertThat(orderItemRepository.collectByOffering(temple.getId(), OrderStatus.CONFIRMED, FROM, TO))
+                .isEmpty();
     }
 
     private OfferingOrder placeAt(String placedAt, Offering offering, int quantity) {
-        var order = new OfferingOrder(temple, "Devotee", "9876543210", Nakshatra.ROHINI, DATE,
+        var order = new OfferingOrder(
+                temple,
+                "Devotee",
+                "9876543210",
+                Nakshatra.ROHINI,
+                DATE,
                 OffsetDateTime.parse(placedAt).toInstant());
         order.addItem(offering, quantity);
         return orderRepository.saveAndFlush(order);

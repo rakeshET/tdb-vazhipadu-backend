@@ -31,7 +31,6 @@ public class TempleService {
 
     @Transactional(readOnly = true)
     public Temple findTempleOrThrow(Long templeId) {
-        return templeRepository.findById(templeId)
-                .orElseThrow(() -> ApiException.notFound("Temple", templeId));
+        return templeRepository.findById(templeId).orElseThrow(() -> ApiException.notFound("Temple", templeId));
     }
 }

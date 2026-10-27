@@ -39,8 +39,7 @@ public class OrderItem {
     @Column(name = "line_total", nullable = false, precision = 14, scale = 2)
     private BigDecimal lineTotal;
 
-    protected OrderItem() {
-    }
+    protected OrderItem() {}
 
     OrderItem(OfferingOrder order, Offering offering, int quantity) {
         this.order = order;

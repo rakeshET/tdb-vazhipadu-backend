@@ -31,8 +31,8 @@ public class OfferingService {
         if (offeringRepository.existsByTempleIdAndNameIgnoreCase(templeId, name)) {
             throw duplicateOffering(name);
         }
-        var offering = new Offering(temple, name, normalise(request.price()), request.activeOr(true),
-                request.dailyLimit());
+        var offering =
+                new Offering(temple, name, normalise(request.price()), request.activeOr(true), request.dailyLimit());
         return OfferingMapper.toResponse(offeringRepository.save(offering));
     }
 
@@ -43,8 +43,7 @@ public class OfferingService {
         if (offeringRepository.existsByTempleIdAndNameIgnoreCaseAndIdNot(templeId, name, offeringId)) {
             throw duplicateOffering(name);
         }
-        offering.update(name, normalise(request.price()), request.activeOr(offering.isActive()),
-                request.dailyLimit());
+        offering.update(name, normalise(request.price()), request.activeOr(offering.isActive()), request.dailyLimit());
         return OfferingMapper.toResponse(offering);
     }
 
@@ -62,7 +61,8 @@ public class OfferingService {
     }
 
     private Offering findOfferingOrThrow(Long templeId, Long offeringId) {
-        return offeringRepository.findByIdAndTempleId(offeringId, templeId)
+        return offeringRepository
+                .findByIdAndTempleId(offeringId, templeId)
                 .orElseThrow(() -> ApiException.notFound("Offering", offeringId));
     }
 
@@ -71,7 +71,7 @@ public class OfferingService {
     }
 
     private static ApiException duplicateOffering(String name) {
-        return new ApiException(ErrorCode.DUPLICATE_OFFERING,
-                "Offering '%s' already exists for this temple".formatted(name));
+        return new ApiException(
+                ErrorCode.DUPLICATE_OFFERING, "Offering '%s' already exists for this temple".formatted(name));
     }
 }

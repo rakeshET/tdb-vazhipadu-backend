@@ -5,8 +5,7 @@ import com.tdb.vazhipadu.entity.Temple;
 
 public final class TempleMapper {
 
-    private TempleMapper() {
-    }
+    private TempleMapper() {}
 
     public static TempleResponse toResponse(Temple temple) {
         return new TempleResponse(temple.getId(), temple.getName());

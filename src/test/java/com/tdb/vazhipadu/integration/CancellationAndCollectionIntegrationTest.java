@@ -49,10 +49,13 @@ class CancellationAndCollectionIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
     @Autowired
     private ObjectMapper objectMapper;
+
     @Autowired
     private OfferingRepository offeringRepository;
+
     @Autowired
     private OrderRepository orderRepository;
 
@@ -62,10 +65,15 @@ class CancellationAndCollectionIntegrationTest {
 
     @BeforeEach
     void seed() throws Exception {
-        templeId = create("/api/temples", "{\"name\": \"Chottanikkara\"}").get("id").asLong();
+        templeId = create("/api/temples", "{\"name\": \"Chottanikkara\"}")
+                .get("id")
+                .asLong();
         pooja = create(offeringsUrl(), "{\"name\": \"Udayasthamana Pooja\", \"price\": 5000.50, \"dailyLimit\": 1}")
-                .get("id").asLong();
-        archana = create(offeringsUrl(), "{\"name\": \"Archana\", \"price\": 33.33}").get("id").asLong();
+                .get("id")
+                .asLong();
+        archana = create(offeringsUrl(), "{\"name\": \"Archana\", \"price\": 33.33}")
+                .get("id")
+                .asLong();
     }
 
     @Test
@@ -108,15 +116,21 @@ class CancellationAndCollectionIntegrationTest {
         for (var offering : report.get("offerings")) {
             sumOfOfferings = sumOfOfferings.add(offering.get("amount").decimalValue());
         }
-        assertThat(report.get("totalAmount").decimalValue()).isEqualByComparingTo(sumOfOfferings)
+        assertThat(report.get("totalAmount").decimalValue())
+                .isEqualByComparingTo(sumOfOfferings)
                 .isEqualByComparingTo("5100.49");
     }
 
     @Test
     void shouldKeepClosedDayReportUnchangedWhenOrderFromEarlierDayCannotBeCancelled() throws Exception {
         var offering = offeringRepository.findById(archana).orElseThrow();
-        var order = new OfferingOrder(offering.getTemple(), "Devotee", "9876543210", Nakshatra.ROHINI,
-                LocalDate.parse(TODAY).plusDays(9), OffsetDateTime.parse(YESTERDAY + "T10:00:00+05:30").toInstant());
+        var order = new OfferingOrder(
+                offering.getTemple(),
+                "Devotee",
+                "9876543210",
+                Nakshatra.ROHINI,
+                LocalDate.parse(TODAY).plusDays(9),
+                OffsetDateTime.parse(YESTERDAY + "T10:00:00+05:30").toInstant());
         order.addItem(offering, 1);
         var orderId = orderRepository.save(order).getId();
         var before = report(YESTERDAY).get("totalAmount").decimalValue();
@@ -149,11 +163,14 @@ class CancellationAndCollectionIntegrationTest {
     }
 
     private JsonNode placeOrder(long offeringId, int quantity, ResultMatcher expectedStatus) throws Exception {
-        var body = """
+        var body =
+                """
                 {"devoteeName": "Devotee", "phone": "9876543210", "nakshatra": "ROHINI", "offeringDate": "%s",
-                 "items": [{"offeringId": %d, "quantity": %d}]}""".formatted(TODAY, offeringId, quantity);
+                 "items": [{"offeringId": %d, "quantity": %d}]}"""
+                        .formatted(TODAY, offeringId, quantity);
         var result = mockMvc.perform(post("/api/temples/%d/orders".formatted(templeId))
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(expectedStatus)
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString());
@@ -168,7 +185,8 @@ class CancellationAndCollectionIntegrationTest {
     }
 
     private JsonNode create(String url, String json) throws Exception {
-        var result = mockMvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content(json))
+        var result = mockMvc.perform(
+                        post(url).contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isCreated())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString());

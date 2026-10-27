@@ -62,11 +62,15 @@ public class OfferingOrder {
     @OrderBy("id")
     private List<OrderItem> items = new ArrayList<>();
 
-    protected OfferingOrder() {
-    }
+    protected OfferingOrder() {}
 
-    public OfferingOrder(Temple temple, String devoteeName, String phone, Nakshatra nakshatra,
-                         LocalDate offeringDate, Instant createdAt) {
+    public OfferingOrder(
+            Temple temple,
+            String devoteeName,
+            String phone,
+            Nakshatra nakshatra,
+            LocalDate offeringDate,
+            Instant createdAt) {
         this.temple = temple;
         this.devoteeName = devoteeName;
         this.phone = phone;

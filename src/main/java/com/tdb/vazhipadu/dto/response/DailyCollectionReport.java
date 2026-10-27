@@ -6,9 +6,4 @@ import java.time.ZoneId;
 import java.util.List;
 
 public record DailyCollectionReport(
-        Long templeId,
-        LocalDate date,
-        ZoneId timeZone,
-        BigDecimal totalAmount,
-        List<OfferingCollection> offerings) {
-}
+        Long templeId, LocalDate date, ZoneId timeZone, BigDecimal totalAmount, List<OfferingCollection> offerings) {}

@@ -26,8 +26,8 @@ public class OfferingController {
     }
 
     @PostMapping
-    public ResponseEntity<OfferingResponse> createOffering(@PathVariable Long templeId,
-                                                           @Valid @RequestBody OfferingRequest request) {
+    public ResponseEntity<OfferingResponse> createOffering(
+            @PathVariable Long templeId, @Valid @RequestBody OfferingRequest request) {
         var created = offeringService.createOffering(templeId, request);
         var location = URI.create("/api/temples/%d/offerings/%d".formatted(templeId, created.id()));
         return ResponseEntity.created(location).body(created);
@@ -44,8 +44,8 @@ public class OfferingController {
     }
 
     @PutMapping("/{offeringId}")
-    public OfferingResponse updateOffering(@PathVariable Long templeId, @PathVariable Long offeringId,
-                                           @Valid @RequestBody OfferingRequest request) {
+    public OfferingResponse updateOffering(
+            @PathVariable Long templeId, @PathVariable Long offeringId, @Valid @RequestBody OfferingRequest request) {
         return offeringService.updateOffering(templeId, offeringId, request);
     }
 }
