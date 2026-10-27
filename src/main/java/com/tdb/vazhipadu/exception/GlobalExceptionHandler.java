@@ -10,9 +10,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -89,8 +91,20 @@ public class GlobalExceptionHandler {
         return build(ErrorCode.UNSUPPORTED_MEDIA_TYPE, ex.getMessage(), request, List.of());
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+        log.warn("Data integrity violation on {} {}", request.getMethod(), request.getRequestURI());
+        return build(ErrorCode.DATA_CONFLICT, "Request conflicts with existing data", request, List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
+        if (ex instanceof ErrorResponse errorResponse) {
+            var status = errorResponse.getStatusCode();
+            var body = new ApiError(Instant.now(), status.value(), "REQUEST_REJECTED",
+                    errorResponse.getBody().getDetail(), request.getRequestURI(), List.of());
+            return ResponseEntity.status(status).body(body);
+        }
         log.error("Unhandled error on {} {}", request.getMethod(), request.getRequestURI(), ex);
         return build(ErrorCode.INTERNAL_ERROR, "Unexpected error", request, List.of());
     }

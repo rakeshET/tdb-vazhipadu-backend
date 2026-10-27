@@ -17,8 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
 
 @WebMvcTest(OrderController.class)
 class OrderControllerTest {
@@ -94,6 +97,34 @@ class OrderControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Order 42 not found"));
+    }
+
+    @Test
+    void shouldReturn400WhenBodyMissing() throws Exception {
+        mockMvc.perform(post("/api/temples/1/orders").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"))
+                .andExpect(jsonPath("$.errors").isEmpty());
+    }
+
+    @Test
+    void shouldReturn409WhenDatabaseConstraintIsViolated() throws Exception {
+        when(orderService.getOrder(1L, 1L)).thenThrow(new DataIntegrityViolationException("duplicate key"));
+
+        mockMvc.perform(get("/api/temples/1/orders/1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DATA_CONFLICT"));
+    }
+
+    @Test
+    void shouldKeepFrameworkStatusInsteadOf500ForErrorResponseExceptions() throws Exception {
+        when(orderService.getOrder(1L, 1L))
+                .thenThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Try again later"));
+
+        mockMvc.perform(get("/api/temples/1/orders/1"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("REQUEST_REJECTED"))
+                .andExpect(jsonPath("$.message").value("Try again later"));
     }
 
     @Test
