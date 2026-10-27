@@ -67,9 +67,23 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderResponse getOrder(Long templeId, Long orderId) {
-        return orderRepository.findWithItemsByIdAndTempleId(orderId, templeId)
-                .map(OrderMapper::toResponse)
-                .orElseThrow(() -> ApiException.notFound("Order", orderId));
+        return OrderMapper.toResponse(findOrderOrThrow(templeId, orderId));
+    }
+
+    @Transactional
+    public OrderResponse cancelOrder(Long templeId, Long orderId) {
+        var order = findOrderOrThrow(templeId, orderId);
+        if (order.isCancelled()) {
+            throw new ApiException(ErrorCode.ORDER_ALREADY_CANCELLED,
+                    "Order %d is already cancelled".formatted(orderId));
+        }
+        if (order.getOfferingDate().isBefore(LocalDate.now(clock))) {
+            throw new ApiException(ErrorCode.ORDER_NOT_CANCELLABLE,
+                    "Order %d was for a past date and can no longer be cancelled".formatted(orderId));
+        }
+        order.cancel(Instant.now(clock));
+        log.info("Order cancelled id={} templeId={}", orderId, templeId);
+        return OrderMapper.toResponse(order);
     }
 
     @Transactional(readOnly = true)
@@ -79,6 +93,11 @@ public class OrderService {
         var pageable = PageRequest.of(page, size, Sort.by("id"));
         var orders = orderRepository.findAll(OrderSpecifications.matching(templeId, criteria), pageable);
         return PageResponse.from(orders.map(OrderMapper::toSummary));
+    }
+
+    private OfferingOrder findOrderOrThrow(Long templeId, Long orderId) {
+        return orderRepository.findWithItemsByIdAndTempleId(orderId, templeId)
+                .orElseThrow(() -> ApiException.notFound("Order", orderId));
     }
 
     private void requireNotInPast(LocalDate offeringDate) {
