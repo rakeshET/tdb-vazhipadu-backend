@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: vazhipadu-backend
+  datasource:
+    url: jdbc:h2:mem:vazhipadu;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jackson:
+    mapper:
+      accept-case-insensitive-enums: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+
+vazhipadu:
+  zone: Asia/Kolkata
