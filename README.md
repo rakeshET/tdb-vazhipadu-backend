@@ -86,12 +86,15 @@ curl 'localhost:8080/api/temples/1/orders?phone=9876543210&status=CONFIRMED&page
 
 ### Daily limits
 
-- An offering may set `dailyLimit` (e.g. 50 Udayasthamana Poojas). Omitting it, or sending `null`, means unlimited.
+- An offering may set `dailyLimit` (e.g. 50 Udayasthamana Poojas). Omitting it, or sending `null`, means unlimited,
+  including on `PUT`, so send the current limit when updating other fields.
 - An order is rejected with `409 DAILY_LIMIT_EXCEEDED` when the confirmed quantity for that offering on the
   offering date plus the requested quantity would exceed the limit. Cancelled orders don't count.
-- Simultaneous orders are serialised per limited offering with a `SELECT … FOR UPDATE` row lock, taken in
+- Simultaneous orders are serialised per limited offering. The offering row is re-read with
+  `SELECT … FOR UPDATE`, so the limit and active flag are checked against current data. Locks are taken in
   offering-id order so multi-offering orders cannot deadlock. Offerings without a limit are never locked.
-  If the lock can't be acquired within 10 s, the API returns `503 TRY_AGAIN`.
+- If the lock can't be acquired within 10 s (the `jakarta.persistence.lock.timeout` hint, plus H2's
+  `LOCK_TIMEOUT`), the API returns `503 TRY_AGAIN` with `Retry-After: 1`.
 
 ### Error format
 
