@@ -12,7 +12,7 @@ public record OfferingRequest(
         @NotNull @DecimalMin("0.01") @Digits(integer = 8, fraction = 2) BigDecimal price,
         Boolean active) {
 
-    public boolean activeOrDefault() {
-        return active == null || active;
+    public boolean activeOr(boolean fallback) {
+        return active == null ? fallback : active;
     }
 }

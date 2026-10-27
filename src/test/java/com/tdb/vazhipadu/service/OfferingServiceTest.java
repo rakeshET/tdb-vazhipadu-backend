@@ -83,6 +83,33 @@ class OfferingServiceTest {
     }
 
     @Test
+    void shouldKeepCurrentActiveFlagWhenOmittedOnUpdate() {
+        var offering = new Offering(temple, "Archana", new BigDecimal("50.00"), false);
+        ReflectionTestUtils.setField(offering, "id", 7L);
+        when(offeringRepository.findByIdAndTempleId(7L, TEMPLE_ID)).thenReturn(Optional.of(offering));
+
+        var response = offeringService.updateOffering(TEMPLE_ID, 7L,
+                new OfferingRequest("Archana", new BigDecimal("60"), null));
+
+        assertThat(response.active()).isFalse();
+        assertThat(response.price()).isEqualTo(new BigDecimal("60.00"));
+    }
+
+    @Test
+    void shouldRejectRenameToAnotherOfferingsName() {
+        var offering = new Offering(temple, "Archana", new BigDecimal("50.00"), true);
+        ReflectionTestUtils.setField(offering, "id", 7L);
+        when(offeringRepository.findByIdAndTempleId(7L, TEMPLE_ID)).thenReturn(Optional.of(offering));
+        when(offeringRepository.existsByTempleIdAndNameIgnoreCaseAndIdNot(TEMPLE_ID, "Pushpanjali", 7L))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> offeringService.updateOffering(TEMPLE_ID, 7L,
+                new OfferingRequest("Pushpanjali", BigDecimal.TEN, true)))
+                .isInstanceOfSatisfying(ApiException.class,
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.DUPLICATE_OFFERING));
+    }
+
+    @Test
     void shouldThrowNotFoundWhenOfferingBelongsToAnotherTemple() {
         when(offeringRepository.findByIdAndTempleId(7L, TEMPLE_ID)).thenReturn(Optional.empty());
 

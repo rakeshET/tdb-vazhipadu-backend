@@ -7,6 +7,8 @@ import com.tdb.vazhipadu.exception.ApiException;
 import com.tdb.vazhipadu.exception.ErrorCode;
 import com.tdb.vazhipadu.mapper.OfferingMapper;
 import com.tdb.vazhipadu.repository.OfferingRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +31,7 @@ public class OfferingService {
         if (offeringRepository.existsByTempleIdAndNameIgnoreCase(templeId, name)) {
             throw duplicateOffering(name);
         }
-        var offering = new Offering(temple, name, request.price(), request.activeOrDefault());
+        var offering = new Offering(temple, name, normalise(request.price()), request.activeOr(true));
         return OfferingMapper.toResponse(offeringRepository.save(offering));
     }
 
@@ -40,7 +42,7 @@ public class OfferingService {
         if (offeringRepository.existsByTempleIdAndNameIgnoreCaseAndIdNot(templeId, name, offeringId)) {
             throw duplicateOffering(name);
         }
-        offering.update(name, request.price(), request.activeOrDefault());
+        offering.update(name, normalise(request.price()), request.activeOr(offering.isActive()));
         return OfferingMapper.toResponse(offering);
     }
 
@@ -60,6 +62,10 @@ public class OfferingService {
     private Offering findOfferingOrThrow(Long templeId, Long offeringId) {
         return offeringRepository.findByIdAndTempleId(offeringId, templeId)
                 .orElseThrow(() -> ApiException.notFound("Offering", offeringId));
+    }
+
+    private static BigDecimal normalise(BigDecimal price) {
+        return price.setScale(2, RoundingMode.UNNECESSARY);
     }
 
     private static ApiException duplicateOffering(String name) {
