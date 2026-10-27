@@ -10,7 +10,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.tdb.vazhipadu.dto.request.OrderSearchCriteria;
+import com.tdb.vazhipadu.dto.response.PageResponse;
+import com.tdb.vazhipadu.entity.OrderStatus;
 import com.tdb.vazhipadu.exception.ApiException;
+import java.time.LocalDate;
+import java.util.List;
 import com.tdb.vazhipadu.exception.ErrorCode;
 import com.tdb.vazhipadu.service.OrderService;
 import org.junit.jupiter.api.Test;
@@ -125,6 +130,43 @@ class OrderControllerTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("REQUEST_REJECTED"))
                 .andExpect(jsonPath("$.message").value("Try again later"));
+    }
+
+    @Test
+    void shouldPassSearchFiltersAndPagingToService() throws Exception {
+        var criteria = new OrderSearchCriteria(LocalDate.of(2026, 11, 1), OrderStatus.CONFIRMED, "9876543210");
+        when(orderService.searchOrders(1L, criteria, 2, 50))
+                .thenReturn(new PageResponse<>(List.of(), 2, 50, 0, 0, false));
+
+        mockMvc.perform(get("/api/temples/1/orders")
+                        .param("date", "2026-11-01").param("status", "confirmed")
+                        .param("phone", "9876543210").param("page", "2").param("size", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.size").value(50));
+    }
+
+    @Test
+    void shouldReturn400WhenSearchPhoneInvalid() throws Exception {
+        mockMvc.perform(get("/api/temples/1/orders").param("phone", "12345"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors[0].field").value("phone"));
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void shouldReturn400WhenPageSizeAboveLimit() throws Exception {
+        mockMvc.perform(get("/api/temples/1/orders").param("size", "500"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("size"));
+    }
+
+    @Test
+    void shouldReturn400WhenSearchDateUnparseable() throws Exception {
+        mockMvc.perform(get("/api/temples/1/orders").param("date", "01-11-2026"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
     }
 
     @Test
