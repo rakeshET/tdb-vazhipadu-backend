@@ -97,7 +97,7 @@ Every error uses the same JSON shape:
 
 | Problem | PR |
 |---------|----|
-| P1 – Offerings and Orders API | _pending_ |
+| P1 – Offerings and Orders API | [#5](https://github.com/rakeshET/tdb-vazhipadu-backend/pull/5) |
 | P2 – Order Search | _pending_ |
 | P3 – Daily Limits | _pending_ |
 | P4 – Cancellation and Daily Collection | _pending_ |
