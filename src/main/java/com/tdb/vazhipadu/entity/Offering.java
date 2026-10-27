@@ -32,22 +32,34 @@ public class Offering {
     @Column(nullable = false)
     private boolean active;
 
+    @Column(name = "daily_limit")
+    private Integer dailyLimit;
+
     protected Offering() {
     }
 
     public Offering(Temple temple, String name, BigDecimal price, boolean active) {
-        this.temple = temple;
-        update(name, price, active);
+        this(temple, name, price, active, null);
     }
 
-    public void update(String name, BigDecimal price, boolean active) {
+    public Offering(Temple temple, String name, BigDecimal price, boolean active, Integer dailyLimit) {
+        this.temple = temple;
+        update(name, price, active, dailyLimit);
+    }
+
+    public void update(String name, BigDecimal price, boolean active, Integer dailyLimit) {
         this.name = name;
         this.price = price;
         this.active = active;
+        this.dailyLimit = dailyLimit;
     }
 
     public boolean belongsTo(Long templeId) {
         return temple.getId().equals(templeId);
+    }
+
+    public boolean hasDailyLimit() {
+        return dailyLimit != null;
     }
 
     public Long getId() {
@@ -68,5 +80,9 @@ public class Offering {
 
     public boolean isActive() {
         return active;
+    }
+
+    public Integer getDailyLimit() {
+        return dailyLimit;
     }
 }

@@ -50,7 +50,7 @@ class OfferingServiceTest {
         when(offeringRepository.save(any(Offering.class))).thenAnswer(inv -> inv.getArgument(0));
 
         var response = offeringService.createOffering(TEMPLE_ID,
-                new OfferingRequest("  Archana ", new BigDecimal("50.00"), null));
+                new OfferingRequest("  Archana ", new BigDecimal("50.00"), null, null));
 
         assertThat(response.name()).isEqualTo("Archana");
         assertThat(response.active()).isTrue();
@@ -63,7 +63,7 @@ class OfferingServiceTest {
         when(offeringRepository.existsByTempleIdAndNameIgnoreCase(TEMPLE_ID, "archana")).thenReturn(true);
 
         assertThatThrownBy(() -> offeringService.createOffering(TEMPLE_ID,
-                new OfferingRequest("archana", BigDecimal.TEN, true)))
+                new OfferingRequest("archana", BigDecimal.TEN, true, null)))
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.DUPLICATE_OFFERING));
         verify(offeringRepository, never()).save(any());
@@ -76,7 +76,7 @@ class OfferingServiceTest {
         when(offeringRepository.findByIdAndTempleId(7L, TEMPLE_ID)).thenReturn(Optional.of(offering));
 
         var response = offeringService.updateOffering(TEMPLE_ID, 7L,
-                new OfferingRequest("Archana", new BigDecimal("60.00"), false));
+                new OfferingRequest("Archana", new BigDecimal("60.00"), false, null));
 
         assertThat(response.active()).isFalse();
         assertThat(response.price()).isEqualByComparingTo("60.00");
@@ -89,7 +89,7 @@ class OfferingServiceTest {
         when(offeringRepository.findByIdAndTempleId(7L, TEMPLE_ID)).thenReturn(Optional.of(offering));
 
         var response = offeringService.updateOffering(TEMPLE_ID, 7L,
-                new OfferingRequest("Archana", new BigDecimal("60"), null));
+                new OfferingRequest("Archana", new BigDecimal("60"), null, null));
 
         assertThat(response.active()).isFalse();
         assertThat(response.price()).isEqualTo(new BigDecimal("60.00"));
@@ -104,7 +104,7 @@ class OfferingServiceTest {
                 .thenReturn(true);
 
         assertThatThrownBy(() -> offeringService.updateOffering(TEMPLE_ID, 7L,
-                new OfferingRequest("Pushpanjali", BigDecimal.TEN, true)))
+                new OfferingRequest("Pushpanjali", BigDecimal.TEN, true, null)))
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.DUPLICATE_OFFERING));
     }
