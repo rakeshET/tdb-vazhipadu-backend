@@ -148,6 +148,49 @@ class OrderServiceTest {
     }
 
     @Test
+    void shouldCancelConfirmedOrderAndRecordWhen() {
+        var order = new OfferingOrder(temple, "Ravi", "9876543210", Nakshatra.ROHINI, TODAY, CLOCK.instant());
+        when(orderRepository.findWithItemsByIdAndTempleId(5L, TEMPLE_ID)).thenReturn(Optional.of(order));
+
+        var response = orderService.cancelOrder(TEMPLE_ID, 5L);
+
+        assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(response.cancelledAt()).isEqualTo(CLOCK.instant());
+    }
+
+    @Test
+    void shouldRejectCancellingAlreadyCancelledOrder() {
+        var order = new OfferingOrder(temple, "Ravi", "9876543210", Nakshatra.ROHINI, TODAY, CLOCK.instant());
+        order.cancel(CLOCK.instant());
+        when(orderRepository.findWithItemsByIdAndTempleId(5L, TEMPLE_ID)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(TEMPLE_ID, 5L))
+                .isInstanceOfSatisfying(ApiException.class,
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.ORDER_ALREADY_CANCELLED));
+    }
+
+    @Test
+    void shouldRejectCancellingOrderForPastIstDate() {
+        var yesterday = TODAY.minusDays(1);
+        var order = new OfferingOrder(temple, "Ravi", "9876543210", Nakshatra.ROHINI, yesterday, CLOCK.instant());
+        when(orderRepository.findWithItemsByIdAndTempleId(5L, TEMPLE_ID)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(TEMPLE_ID, 5L))
+                .isInstanceOfSatisfying(ApiException.class,
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.ORDER_NOT_CANCELLABLE));
+        assertThat(order.isCancelled()).isFalse();
+    }
+
+    @Test
+    void shouldThrowNotFoundWhenCancellingUnknownOrder() {
+        when(orderRepository.findWithItemsByIdAndTempleId(5L, TEMPLE_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.cancelOrder(TEMPLE_ID, 5L))
+                .isInstanceOfSatisfying(ApiException.class,
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    @Test
     void shouldThrowNotFoundWhenSearchingOrdersOfUnknownTemple() {
         when(templeService.findTempleOrThrow(99L)).thenThrow(ApiException.notFound("Temple", 99L));
 
