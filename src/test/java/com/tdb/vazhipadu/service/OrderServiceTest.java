@@ -51,13 +51,15 @@ class OrderServiceTest {
     private OfferingRepository offeringRepository;
     @Mock
     private TempleService templeService;
+    @Mock
+    private DailyLimitService dailyLimitService;
 
     private OrderService orderService;
     private Temple temple;
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, offeringRepository, templeService, CLOCK);
+        orderService = new OrderService(orderRepository, offeringRepository, templeService, dailyLimitService, CLOCK);
         temple = withId(new Temple("Sabarimala"), TEMPLE_ID);
     }
 
