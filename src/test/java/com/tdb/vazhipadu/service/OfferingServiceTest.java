@@ -110,6 +110,32 @@ class OfferingServiceTest {
     }
 
     @Test
+    void shouldCreateOfferingWithDailyLimit() {
+        when(templeService.findTempleOrThrow(TEMPLE_ID)).thenReturn(temple);
+        when(offeringRepository.save(any(Offering.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = offeringService.createOffering(TEMPLE_ID,
+                new OfferingRequest("Udayasthamana Pooja", new BigDecimal("5000"), true, 50));
+
+        assertThat(response.dailyLimit()).isEqualTo(50);
+    }
+
+    @Test
+    void shouldReplaceDailyLimitOnUpdateAndRemoveItWhenOmitted() {
+        var offering = new Offering(temple, "Udayasthamana Pooja", new BigDecimal("5000.00"), true, 50);
+        ReflectionTestUtils.setField(offering, "id", 7L);
+        when(offeringRepository.findByIdAndTempleId(7L, TEMPLE_ID)).thenReturn(Optional.of(offering));
+
+        var lowered = offeringService.updateOffering(TEMPLE_ID, 7L,
+                new OfferingRequest("Udayasthamana Pooja", new BigDecimal("5000"), true, 30));
+        var removed = offeringService.updateOffering(TEMPLE_ID, 7L,
+                new OfferingRequest("Udayasthamana Pooja", new BigDecimal("5000"), true, null));
+
+        assertThat(lowered.dailyLimit()).isEqualTo(30);
+        assertThat(removed.dailyLimit()).isNull();
+    }
+
+    @Test
     void shouldThrowNotFoundWhenOfferingBelongsToAnotherTemple() {
         when(offeringRepository.findByIdAndTempleId(7L, TEMPLE_ID)).thenReturn(Optional.empty());
 
