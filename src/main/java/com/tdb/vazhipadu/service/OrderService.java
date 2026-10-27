@@ -72,14 +72,15 @@ public class OrderService {
 
     @Transactional
     public OrderResponse cancelOrder(Long templeId, Long orderId) {
-        var order = findOrderOrThrow(templeId, orderId);
+        var order = orderRepository.findForUpdateByIdAndTempleId(orderId, templeId)
+                .orElseThrow(() -> ApiException.notFound("Order", orderId));
         if (order.isCancelled()) {
             throw new ApiException(ErrorCode.ORDER_ALREADY_CANCELLED,
                     "Order %d is already cancelled".formatted(orderId));
         }
-        if (order.getOfferingDate().isBefore(LocalDate.now(clock))) {
+        if (!LocalDate.ofInstant(order.getCreatedAt(), clock.getZone()).equals(LocalDate.now(clock))) {
             throw new ApiException(ErrorCode.ORDER_NOT_CANCELLABLE,
-                    "Order %d was for a past date and can no longer be cancelled".formatted(orderId));
+                    "Order %d was placed on an earlier day; only same-day orders can be cancelled".formatted(orderId));
         }
         order.cancel(Instant.now(clock));
         log.info("Order cancelled id={} templeId={}", orderId, templeId);
