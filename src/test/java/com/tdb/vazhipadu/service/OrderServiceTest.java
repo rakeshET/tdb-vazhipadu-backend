@@ -40,7 +40,7 @@ class OrderServiceTest {
 
     private static final Long TEMPLE_ID = 1L;
     private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-27T04:30:00Z"), IST);
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-26T20:00:00Z"), IST);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 27);
 
     @Mock
