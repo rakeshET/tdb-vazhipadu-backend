@@ -8,8 +8,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tdb.vazhipadu.entity.Nakshatra;
+import com.tdb.vazhipadu.entity.OfferingOrder;
+import com.tdb.vazhipadu.repository.OfferingRepository;
+import com.tdb.vazhipadu.repository.OrderRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +51,10 @@ class CancellationAndCollectionIntegrationTest {
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private OfferingRepository offeringRepository;
+    @Autowired
+    private OrderRepository orderRepository;
 
     private long templeId;
     private long pooja;
@@ -67,7 +76,7 @@ class CancellationAndCollectionIntegrationTest {
         var yesterday = report(YESTERDAY);
 
         assertThat(today.get("totalAmount").decimalValue()).isEqualByComparingTo("99.99");
-        assertThat(today.get("offerings").get(0).get("count").asLong()).isEqualTo(3);
+        assertThat(today.get("offerings").get(0).get("quantity").asLong()).isEqualTo(3);
         assertThat(yesterday.get("totalAmount").decimalValue()).isEqualByComparingTo("0.00");
         assertThat(yesterday.get("offerings")).isEmpty();
     }
@@ -101,6 +110,31 @@ class CancellationAndCollectionIntegrationTest {
         }
         assertThat(report.get("totalAmount").decimalValue()).isEqualByComparingTo(sumOfOfferings)
                 .isEqualByComparingTo("5100.49");
+    }
+
+    @Test
+    void shouldKeepClosedDayReportUnchangedWhenOrderFromEarlierDayCannotBeCancelled() throws Exception {
+        var offering = offeringRepository.findById(archana).orElseThrow();
+        var order = new OfferingOrder(offering.getTemple(), "Devotee", "9876543210", Nakshatra.ROHINI,
+                LocalDate.parse(TODAY).plusDays(9), OffsetDateTime.parse(YESTERDAY + "T10:00:00+05:30").toInstant());
+        order.addItem(offering, 1);
+        var orderId = orderRepository.save(order).getId();
+        var before = report(YESTERDAY).get("totalAmount").decimalValue();
+
+        mockMvc.perform(post("/api/temples/%d/orders/%d/cancel".formatted(templeId, orderId)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_CANCELLABLE"));
+
+        assertThat(before).isEqualByComparingTo("33.33");
+        assertThat(report(YESTERDAY).get("totalAmount").decimalValue()).isEqualByComparingTo(before);
+    }
+
+    @Test
+    void shouldReturn400ForDateOutsideSupportedRange() throws Exception {
+        mockMvc.perform(get("/api/temples/%d/reports/daily-collection".formatted(templeId))
+                        .param("date", "+999999999-12-31"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
     }
 
     @Test
