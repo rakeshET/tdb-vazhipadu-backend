@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.tdb.vazhipadu.dto.response.ApiError;
 import com.tdb.vazhipadu.dto.response.FieldViolation;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -93,6 +94,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     ResponseEntity<ApiError> handleMediaType(HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
         return build(ErrorCode.UNSUPPORTED_MEDIA_TYPE, ex.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(DateTimeException.class)
+    ResponseEntity<ApiError> handleDateOutOfRange(DateTimeException ex, HttpServletRequest request) {
+        return build(ErrorCode.VALIDATION_FAILED, "Date is outside the supported range", request, List.of());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

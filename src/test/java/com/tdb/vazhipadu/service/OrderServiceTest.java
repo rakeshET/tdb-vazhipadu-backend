@@ -148,6 +148,45 @@ class OrderServiceTest {
     }
 
     @Test
+    void shouldCancelOrderPlacedEarlierTheSameIstDay() {
+        var order = orderPlacedAt(Instant.parse("2026-10-26T18:30:00Z"));
+
+        var response = orderService.cancelOrder(TEMPLE_ID, 5L);
+
+        assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(response.cancelledAt()).isEqualTo(CLOCK.instant());
+        assertThat(order.isCancelled()).isTrue();
+    }
+
+    @Test
+    void shouldRejectCancellingAlreadyCancelledOrder() {
+        orderPlacedAt(CLOCK.instant()).cancel(CLOCK.instant());
+
+        assertThatThrownBy(() -> orderService.cancelOrder(TEMPLE_ID, 5L))
+                .isInstanceOfSatisfying(ApiException.class,
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.ORDER_ALREADY_CANCELLED));
+    }
+
+    @Test
+    void shouldRejectCancellingOrderPlacedOnEarlierIstDayEvenIfSameUtcDay() {
+        var order = orderPlacedAt(Instant.parse("2026-10-26T18:29:59Z"));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(TEMPLE_ID, 5L))
+                .isInstanceOfSatisfying(ApiException.class,
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.ORDER_NOT_CANCELLABLE));
+        assertThat(order.isCancelled()).isFalse();
+    }
+
+    @Test
+    void shouldThrowNotFoundWhenCancellingUnknownOrder() {
+        when(orderRepository.findForUpdateByIdAndTempleId(5L, TEMPLE_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.cancelOrder(TEMPLE_ID, 5L))
+                .isInstanceOfSatisfying(ApiException.class,
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    @Test
     void shouldThrowNotFoundWhenSearchingOrdersOfUnknownTemple() {
         when(templeService.findTempleOrThrow(99L)).thenThrow(ApiException.notFound("Temple", 99L));
 
@@ -155,6 +194,12 @@ class OrderServiceTest {
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_FOUND));
         verifyNoInteractions(orderRepository);
+    }
+
+    private OfferingOrder orderPlacedAt(Instant placedAt) {
+        var order = new OfferingOrder(temple, "Ravi", "9876543210", Nakshatra.ROHINI, TODAY.plusDays(3), placedAt);
+        when(orderRepository.findForUpdateByIdAndTempleId(5L, TEMPLE_ID)).thenReturn(Optional.of(order));
+        return order;
     }
 
     private static CreateOrderRequest request(LocalDate date, OrderItemRequest... items) {

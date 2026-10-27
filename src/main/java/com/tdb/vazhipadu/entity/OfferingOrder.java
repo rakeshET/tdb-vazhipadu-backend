@@ -55,6 +55,9 @@ public class OfferingOrder {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
     private List<OrderItem> items = new ArrayList<>();
@@ -78,6 +81,15 @@ public class OfferingOrder {
         var item = new OrderItem(this, offering, quantity);
         items.add(item);
         totalAmount = totalAmount.add(item.getLineTotal());
+    }
+
+    public void cancel(Instant at) {
+        this.status = OrderStatus.CANCELLED;
+        this.cancelledAt = at;
+    }
+
+    public boolean isCancelled() {
+        return status == OrderStatus.CANCELLED;
     }
 
     public Long getId() {
@@ -114,6 +126,10 @@ public class OfferingOrder {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getCancelledAt() {
+        return cancelledAt;
     }
 
     public List<OrderItem> getItems() {

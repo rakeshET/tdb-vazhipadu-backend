@@ -17,5 +17,6 @@ public record OrderResponse(
         OrderStatus status,
         BigDecimal totalAmount,
         Instant createdAt,
+        Instant cancelledAt,
         List<OrderItemResponse> items) {
 }

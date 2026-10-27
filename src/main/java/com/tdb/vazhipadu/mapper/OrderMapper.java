@@ -15,7 +15,7 @@ public final class OrderMapper {
         var items = order.getItems().stream().map(OrderMapper::toResponse).toList();
         return new OrderResponse(order.getId(), order.getTemple().getId(), order.getDevoteeName(),
                 order.getPhone(), order.getNakshatra(), order.getOfferingDate(), order.getStatus(),
-                order.getTotalAmount(), order.getCreatedAt(), items);
+                order.getTotalAmount(), order.getCreatedAt(), order.getCancelledAt(), items);
     }
 
     public static OrderSummaryResponse toSummary(OfferingOrder order) {

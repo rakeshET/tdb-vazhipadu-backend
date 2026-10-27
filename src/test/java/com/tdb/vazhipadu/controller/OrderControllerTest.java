@@ -193,6 +193,25 @@ class OrderControllerTest {
     }
 
     @Test
+    void shouldReturn422WhenCancellingOrderFromEarlierDay() throws Exception {
+        when(orderService.cancelOrder(1L, 5L)).thenThrow(new ApiException(ErrorCode.ORDER_NOT_CANCELLABLE,
+                "Order 5 was placed on an earlier day; only same-day orders can be cancelled"));
+
+        mockMvc.perform(post("/api/temples/1/orders/5/cancel"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_CANCELLABLE"));
+    }
+
+    @Test
+    void shouldReturn404WhenCancellingUnknownOrder() throws Exception {
+        when(orderService.cancelOrder(1L, 5L)).thenThrow(ApiException.notFound("Order", 5L));
+
+        mockMvc.perform(post("/api/temples/1/orders/5/cancel"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
     void shouldReturn400WhenSearchPhoneInvalid() throws Exception {
         mockMvc.perform(get("/api/temples/1/orders").param("phone", "12345"))
                 .andExpect(status().isBadRequest())
